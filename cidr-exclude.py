@@ -13,7 +13,7 @@ args = parser.parse_args()
 with open(args.basefile) as f: bases = f.readlines()
 with open(args.excludefile) as f: excludes = f.readlines()
 
-# trim an filter
+# trim and filter
 bases = list(filter(None, [base.strip() for base in bases]))
 excludes = list(filter(None, [exclude.strip() for exclude in excludes]))
 
@@ -21,7 +21,7 @@ excludes = list(filter(None, [exclude.strip() for exclude in excludes]))
 bases = list(map(lambda net: (netaddr.IPNetwork(net)), bases))
 excludes = list(map(lambda net: (netaddr.IPNetwork(net)), excludes))
 
-# loop through bases and exclude what overlaps
+# loop through bases, exclude and print remainder
 for base in bases:
   for exclude in excludes:
     for remainder in list(netaddr.cidr_exclude(base, exclude)):
