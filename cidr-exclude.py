@@ -23,15 +23,15 @@ excludes = list(map(lambda net: (ip_network(net, strict=False)), excludes))
 
 # loop through bases and exclude what overlaps
 for base in bases:
-  printed = False;
+  printed = False
   for exclude in excludes:
     if exclude.overlaps(base):
       try:
         for remainder in list(base.address_exclude(exclude)):
-          printed = True;
+          printed = True
           print(remainder)
       except ValueError:
-        printed = False;
+        printed = False
 
   if not printed:
     print(base)
