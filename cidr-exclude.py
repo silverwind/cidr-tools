@@ -1,6 +1,6 @@
 #/usr/bin/env python3
 import argparse
-from ipaddress import ip_network
+import netaddr
 
 parser = argparse.ArgumentParser(
   description="Exclude a list of IPv4/IPv6 CIDR subnets from another"
@@ -17,21 +17,12 @@ with open(args.excludefile) as f: excludes = f.readlines()
 bases = list(filter(None, [base.strip() for base in bases]))
 excludes = list(filter(None, [exclude.strip() for exclude in excludes]))
 
-# generate ip_network objects
-bases = list(map(lambda net: (ip_network(net, strict=False)), bases))
-excludes = list(map(lambda net: (ip_network(net, strict=False)), excludes))
+# generate IPNetwork objects
+bases = list(map(lambda net: (netaddr.IPNetwork(net)), bases))
+excludes = list(map(lambda net: (netaddr.IPNetwork(net)), excludes))
 
 # loop through bases and exclude what overlaps
 for base in bases:
-  printed = False
   for exclude in excludes:
-    if exclude.overlaps(base):
-      try:
-        for remainder in list(base.address_exclude(exclude)):
-          printed = True
-          print(remainder)
-      except ValueError:
-        printed = False
-
-  if not printed:
-    print(base)
+    for remainder in list(netaddr.cidr_exclude(base, exclude)):
+      print(remainder)
