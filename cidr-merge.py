@@ -20,7 +20,3 @@ nets = list(map(lambda net: (netaddr.IPNetwork(net)), nets))
 # merge nets
 for net in netaddr.cidr_merge(nets):
   print(net)
-
-
-
-

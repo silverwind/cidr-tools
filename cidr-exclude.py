@@ -35,7 +35,3 @@ for base in bases:
 
   if not printed:
     print(base)
-
-
-
-
