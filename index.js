@@ -29,7 +29,6 @@ module.exports.exclude = function(basenets, excludenets) {
     const excludefile = tempfile(".net");
     fs.writeFile(basefile, basenets.join("\n")).then(function() {
       fs.writeFile(excludefile, excludenets.join("\n")).then(function() {
-
         execa.stdout(exclude, [basefile, excludefile]).then(function(stdout) {
           resolve(stdout.split("\n").filter(net => Boolean(net)));
           fs.unlink(basefile);
