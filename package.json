@@ -7,7 +7,7 @@
   "license": "BSD-2-Clause",
   "scripts": {
     "test": "ava",
-    "postinstall": "install.sh"
+    "postinstall": "bash install.sh"
   },
   "keywords": [
     "cidr",
