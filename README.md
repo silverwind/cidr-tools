@@ -5,7 +5,7 @@
 
 With `python3` and `pip3` available:
 
-````bash
+```bash
 $ npm i --save cidr-tools
 ```
 ## Usage
