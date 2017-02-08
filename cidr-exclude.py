@@ -23,38 +23,48 @@ bases = list(filter(None, [base.strip() for base in bases]))
 excludes = list(filter(None, [exclude.strip() for exclude in excludes]))
 
 # split up into two lists, netaddr can get confused otherwise
-def netlist(nets):
-  v4nets = []
-  v6nets = []
+def ipset(nets):
+  v4nets = netaddr.IPSet()
+  v6nets = netaddr.IPSet()
   for net in nets:
     ipNetwork = netaddr.IPNetwork(net)
     parts = str(ipNetwork).split("/")
     ip = parts[0]
     mask = parts[1]
     if netaddr.valid_ipv4(ip) and int(mask) <= 32:
-      v4nets.append(ipNetwork)
+      v4nets.add(ipNetwork)
     elif netaddr.valid_ipv6(ip) and int(mask) <= 128:
-      v6nets.append(ipNetwork)
+      v6nets.add(ipNetwork)
   return v4nets, v6nets
 
-v4bases, v6bases = netlist(bases)
-v4excludes, v6excludes = netlist(excludes)
+v4bases, v6bases = ipset(bases)
+v4excludes, v6excludes = ipset(excludes)
 
-# loop through bases, exclude and print remainder
-if len(v4excludes) == 0:
-  for v4base in v4bases:
-    print(v4base)
-else:
-  for v4base in v4bases:
-    for v4exclude in v4excludes:
-      for v4remainder in list(netaddr.cidr_exclude(v4base, v4exclude)):
-        print(v4remainder)
+while True:
+  try:
+    v4exclude = v4excludes.pop()
+  except KeyError:
+    break
+  v4bases.remove(v4exclude)
 
-if len(v6excludes) == 0:
-  for v6base in v6bases:
-    print(v6base)
-else:
-  for v6base in v6bases:
-    for v6exclude in v6excludes:
-      for v6remainder in list(netaddr.cidr_exclude(v6base, v6exclude)):
-        print(v6remainder)
+while True:
+  try:
+    v6exclude = v6excludes.pop()
+  except KeyError:
+    break
+  v4bases.remove(v6exclude)
+
+while True:
+  try:
+    v4remain = v4bases.pop()
+  except KeyError:
+    break
+  print(str(v4remain))
+
+while True:
+  try:
+    v6remain = v6bases.pop()
+  except KeyError:
+    break
+  print(str(v6remain))
+
