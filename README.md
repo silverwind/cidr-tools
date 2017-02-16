@@ -4,14 +4,12 @@
 [![](https://api.travis-ci.org/silverwind/cidr-tools.svg?style=flat)](https://travis-ci.org/silverwind/cidr-tools)
 > Tools to work with IPv4 and IPv6 CIDR network lists
 
-## Install
-
 With `python3` and `pip3` available:
 
 ```bash
 $ npm i --save cidr-tools
 ```
-## Usage
+## Example
 
 ```js
 const cidrTools = require('cidr-tools');
