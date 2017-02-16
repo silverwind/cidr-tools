@@ -52,7 +52,7 @@ while True:
     v6exclude = v6excludes.pop()
   except KeyError:
     break
-  v4bases.remove(v6exclude)
+  v6bases.remove(v6exclude)
 
 while True:
   try:

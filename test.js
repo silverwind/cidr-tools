@@ -22,5 +22,5 @@ test("exclude v6 nets", async function(t) {
 });
 
 test("exclude mixed", async function(t) {
-  t.deepEqual(await m.exclude(["::0/127", "1.2.3.4/24"], ["::/128"]), ["1.2.3.4/24", "::1/128"]);
+  t.deepEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/128"]), ["1.2.3.0/24", "::1/128"]);
 });

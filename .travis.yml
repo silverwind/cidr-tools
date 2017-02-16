@@ -3,9 +3,13 @@ sudo: required
 dist: trusty
 node_js:
   - node
+python:
+  - python
 before_install:
   - sudo apt-get update
   - sudo apt-get install python3 python3-setuptools python3-pip
+  - python3 -V
+  - pip3 -V
 install:
   - bash install.sh
   - npm install
