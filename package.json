@@ -7,7 +7,7 @@
   "license": "BSD-2-Clause",
   "scripts": {
     "test": "ava",
-    "postinstall": "bash install.sh"
+    "postinstall": "pip3 install -t python_modules netaddr"
   },
   "keywords": [
     "cidr",

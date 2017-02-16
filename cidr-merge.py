@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
-sys.path.append(os.path.join(sys.path[0], "lib", "python", "site-packages"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "python_modules"))
 
 import argparse
 import netaddr
