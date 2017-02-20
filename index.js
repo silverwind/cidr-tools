@@ -16,7 +16,10 @@ module.exports.merge = function(nets) {
       execa.stdout(merge, [netfile]).then(function(stdout) {
         resolve(stdout.split("\n").filter(net => Boolean(net)));
         fs.unlink(netfile);
-      }).catch(reject);
+      }).catch(function(err) {
+        resolve(err);
+        fs.unlink(netfile);
+      });
     }).catch(reject);
   });
 };
@@ -33,7 +36,11 @@ module.exports.exclude = function(basenets, excludenets) {
           resolve(stdout.split("\n").filter(net => Boolean(net)));
           fs.unlink(basefile);
           fs.unlink(excludefile);
-        }).catch(reject);
+        }).catch(function(err) {
+          resolve(err);
+          fs.unlink(basefile);
+          fs.unlink(excludefile);
+        });
       }).catch(reject);
     }).catch(reject);
   });
