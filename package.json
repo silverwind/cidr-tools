@@ -6,8 +6,7 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "scripts": {
-    "test": "eslint *.js && ava",
-    "postinstall": "pip3 install -t python_modules netaddr"
+    "test": "eslint *.js && ava"
   },
   "keywords": [
     "cidr",
