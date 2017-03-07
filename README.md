@@ -7,7 +7,7 @@
 With `python3` and `pip3` available:
 
 ```bash
-$ pip3 install netaddr
+$ pip3 install -r requirements.txt
 $ npm i --save cidr-tools
 ```
 ## Example
