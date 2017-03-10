@@ -3,7 +3,7 @@ import argparse
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "tools", "python_modules"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "python_modules"))
 import netaddr
 
 parser = argparse.ArgumentParser(
