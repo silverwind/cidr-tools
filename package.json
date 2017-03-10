@@ -6,7 +6,7 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "scripts": {
-    "test": "eslint *.js && pylint *.py && ava"
+    "test": "eslint *.js && pylint3 *.py &> /dev/null || pylint *.py && ava"
   },
   "keywords": [
     "cidr",
