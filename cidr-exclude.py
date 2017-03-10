@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import argparse
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "tools", "python_modules"))
 import netaddr
 
 parser = argparse.ArgumentParser(
@@ -64,4 +68,3 @@ while True:
   except KeyError:
     break
   print(str(v6remain))
-

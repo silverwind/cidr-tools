@@ -1,5 +1,6 @@
 lint:
 	eslint *.js
+	pylint *.py
 
 test:
 	npm test
