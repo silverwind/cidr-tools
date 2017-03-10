@@ -1,6 +1,6 @@
 lint:
 	eslint *.js
-	pylint3 *.py &> /dev/null || pylint *.py
+	pylint *.py
 
 test:
 	npm test
