@@ -5,4 +5,4 @@ node_js:
   - node
 before_install:
   - sudo apt-get update
-  - sudo apt-get -y install python3 pylint3
+  - sudo apt-get -y install python3
