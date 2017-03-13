@@ -1,5 +1,5 @@
 lint:
-	eslint *.js
+	eslint index.js
 	pylint *.py
 
 test:
