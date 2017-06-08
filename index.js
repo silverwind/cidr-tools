@@ -1,9 +1,9 @@
 "use strict";
 
-var execa = require("execa");
-var fs = require("mz/fs");
-var path = require("path");
-var tempfile = require("tempfile");
+const execa = require("execa");
+const fs = require("mz/fs");
+const path = require("path");
+const tempfile = require("tempfile");
 
 const merge = path.join(__dirname, "cidr-merge.py");
 const exclude = path.join(__dirname, "cidr-exclude.py");
