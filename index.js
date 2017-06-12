@@ -26,8 +26,9 @@ module.exports.merge = function(nets) {
 
 module.exports.exclude = function(basenets, excludenets) {
   return new Promise(function(resolve, reject) {
-    if (!Array.isArray(basenets) || !Array.isArray(excludenets))
+    if (!Array.isArray(basenets) || !Array.isArray(excludenets)) {
       return reject(new Error("Expected an array"));
+    }
     const basefile = tempfile(".net");
     const excludefile = tempfile(".net");
     fs.writeFile(basefile, basenets.join("\n")).then(function() {
