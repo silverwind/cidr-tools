@@ -27,12 +27,12 @@
     "install.sh"
   ],
   "dependencies": {
-    "execa": "^0.6.0",
+    "execa": "^0.7.0",
     "mz": "^2.6.0",
-    "tempfile": "^1.1.1"
+    "tempfile": "^2.0.0"
   },
   "devDependencies": {
-    "ava": "^0.18.1",
-    "eslint": "^3.15.0"
+    "ava": "^0.19.1",
+    "eslint": "^4.0.0"
   }
 }
