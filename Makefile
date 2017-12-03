@@ -1,5 +1,5 @@
 lint:
-	eslint index.js
+	node_modules/.bin/eslint index.js
 	pylint *.py
 
 test:
@@ -10,7 +10,7 @@ publish:
 	npm publish
 
 update:
-	ncu --packageFile package.json -ua
+	node_modules/.bin/updates -u
 	rm -rf node_modules
 	yarn
 
