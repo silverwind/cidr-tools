@@ -23,23 +23,30 @@ cidrTools.exclude(['::1/127'], ['::1/128']).then(r => {
   console.log(r);
   //=> ['::/128']
 });
+
+cidrTools.expand(['2001:db8::/126']).then(r => {
+  console.log(r);
+  //=> ['2001:db8::', '2001:db8::1', '2001:db8::2', '2001:db8::3']
+});
 ```
 
 ## API
 
 ### cidrTools.merge(networks)
 
-- `networks` *Array*: A list of IPv4 and IPv6 networks.
+- `networks` *String* or *Array*: A list of IPv4 and IPv6 networks.
 - Returns: A promise that resolves to an array of merged networks.
 
 ### cidrTools.exclude(baseNetworks, excludeNetworks)
 
-- `baseNetworks` *Array*: A list of IPv4 and IPv6 networks.
+- `baseNetworks` *String* or *Array*: A list of IPv4 and IPv6 networks.
 - `excludeNetworks` *Array*: A list of IPv4 and IPv6 networks to exclude from `baseNetworks`.
 - Returns: A promise that resolves to an array of merged remaining networks.
 
-## CLI
+### cidrTools.expand(networks)
 
-*CLI is work in progress*
+- `networks` *String* or *Array*: A list of IPv4 and IPv6 networks.
+- Returns: A promise that resolves to an array of individual IPs contained in the networks.
+
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.

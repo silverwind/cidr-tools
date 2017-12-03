@@ -27,13 +27,13 @@
     "install.sh"
   ],
   "dependencies": {
-    "execa": "^0.7.0",
-    "ipaddr.js": "^1.4.0",
-    "mz": "^2.6.0",
+    "execa": "^0.8.0",
+    "ipaddr.js": "^1.5.4",
+    "mz": "^2.7.0",
     "tempfile": "^2.0.0"
   },
   "devDependencies": {
-    "ava": "^0.19.1",
-    "eslint": "^4.0.0"
+    "ava": "^0.24.0",
+    "eslint": "^4.12.1"
   }
 }

@@ -36,3 +36,19 @@ test("exclude mixed", async function(t) {
 test("exclude mixed #2", async function(t) {
   t.deepEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/0", "0.0.0.0/0"]), []);
 });
+
+test("expand v4", async function(t) {
+  t.deepEqual(await m.expand(["1.2.3.0/31"]), ["1.2.3.0", "1.2.3.1"]);
+});
+
+test("expand v6", async function(t) {
+  t.deepEqual(await m.expand(["2008:db1::/127"]), ["2008:db1::", "2008:db1::1"]);
+});
+
+test("string argument", async function(t) {
+  t.deepEqual(await m.expand("2008:db1::/127"), ["2008:db1::", "2008:db1::1"]);
+});
+
+test("invalid argument", async function(t) {
+  await t.throws(m.expand());
+});
