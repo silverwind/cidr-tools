@@ -24,6 +24,7 @@
     "index.js",
     "cidr-merge.py",
     "cidr-exclude.py",
+    "cidr-expand.py",
     "install.sh"
   ],
   "dependencies": {
