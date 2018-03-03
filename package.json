@@ -6,7 +6,7 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "scripts": {
-    "test": "eslint index.js && ava"
+    "test": "make test"
   },
   "keywords": [
     "cidr",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "ava": "^0.24.0",
     "eslint": "^4.12.1",
+    "eslint-config-silverwind": "^1.0.37",
     "updates": "^1.2.6"
   }
 }

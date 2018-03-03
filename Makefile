@@ -1,16 +1,19 @@
+BIN:=node_modules/.bin
+
 lint:
-	node_modules/.bin/eslint index.js
+	$(BIN)/eslint index.js
 	pylint *.py
 
 test:
-	npm test
+	$(MAKE) lint
+	$(BIN)/ava
 
 publish:
 	git push -u --tags origin master
 	npm publish
 
 update:
-	node_modules/.bin/updates -u
+	$(BIN)/updates -u
 	rm -rf node_modules
 	yarn
 
