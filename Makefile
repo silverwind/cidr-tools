@@ -2,7 +2,7 @@ BIN:=node_modules/.bin
 
 test:
 	$(BIN)/eslint index.js
-	pylint *.py
+	hash pylint && pylint *.py || true
 	$(BIN)/ava
 
 publish:
