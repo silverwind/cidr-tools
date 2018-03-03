@@ -1,11 +1,8 @@
 BIN:=node_modules/.bin
 
-lint:
+test:
 	$(BIN)/eslint index.js
 	pylint *.py
-
-test:
-	$(MAKE) lint
 	$(BIN)/ava
 
 publish:
@@ -26,8 +23,8 @@ npm-minor:
 npm-major:
 	npm version major
 
-patch: lint test npm-patch publish
-minor: lint test npm-minor publish
-major: lint test npm-major publish
+patch: test npm-patch publish
+minor: test npm-minor publish
+major: test npm-major publish
 
-.PHONY: lint test publish update npm-patch npm-minor npm-major patch minor major
+.PHONY: test publish update npm-patch npm-minor npm-major patch minor major
