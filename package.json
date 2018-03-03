@@ -28,15 +28,15 @@
     "install.sh"
   ],
   "dependencies": {
-    "execa": "^0.8.0",
-    "ipaddr.js": "^1.5.4",
+    "execa": "^0.9.0",
+    "ipaddr.js": "^1.6.0",
     "mz": "^2.7.0",
     "tempfile": "^2.0.0"
   },
   "devDependencies": {
-    "ava": "^0.24.0",
-    "eslint": "^4.12.1",
+    "ava": "^0.25.0",
+    "eslint": "^4.18.2",
     "eslint-config-silverwind": "^1.0.37",
-    "updates": "^1.2.6"
+    "updates": "^2.3.1"
   }
 }
