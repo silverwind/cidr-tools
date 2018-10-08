@@ -1,54 +1,26 @@
-import test from "ava";
-import m from ".";
+"use strict";
 
-test("merge v4 nets", async function(t) {
-  t.deepEqual(await m.merge(["1.0.0.0/24", "1.0.1.0/24"]), ["1.0.0.0/23"]);
-});
+const m = require(".");
+const assert = require("assert");
 
-test("merge v6 nets", async function(t) {
-  t.deepEqual(await m.merge(["::0/128", "::1/128"]), ["::/127"]);
-});
+async function main() {
+  assert.deepStrictEqual(await m.merge(["1.0.0.0/24", "1.0.1.0/24"]), ["1.0.0.0/23"]);
+  assert.deepStrictEqual(await m.merge(["::0/128", "::1/128"]), ["::/127"]);
+  assert.deepStrictEqual(await m.merge(["::0/128", "1.2.3.4/24"]), ["1.2.3.4/24", "::/128"]);
+  assert.deepStrictEqual(await m.exclude(["1.0.0.0/23"], ["1.0.1.0/24"]), ["1.0.0.0/24"]);
+  assert.deepStrictEqual(await m.exclude(["1.0.0.0/24"], ["1.0.0.0/16"]), []);
+  assert.deepStrictEqual(await m.exclude(["::/127"], ["::1/128"]), ["::/128"]);
+  assert.deepStrictEqual(await m.exclude(["::/120"], ["::1/112"]), []);
+  assert.deepStrictEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/128"]), ["1.2.3.0/24", "::1/128"]);
+  assert.deepStrictEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/0", "0.0.0.0/0"]), []);
+  assert.deepStrictEqual(await m.expand(["1.2.3.0/31"]), ["1.2.3.0", "1.2.3.1"]);
+  assert.deepStrictEqual(await m.expand(["2008:db1::/127"]), ["2008:db1::", "2008:db1::1"]);
+  assert.deepStrictEqual(await m.expand("2008:db1::/127"), ["2008:db1::", "2008:db1::1"]);
+}
 
-test("merge mixed", async function(t) {
-  t.deepEqual(await m.merge(["::0/128", "1.2.3.4/24"]), ["1.2.3.4/24", "::/128"]);
-});
+function exit(err) {
+  if (err) console.info(err);
+  process.exit(err ? 1 : 0);
+}
 
-test("exclude v4 nets", async function(t) {
-  t.deepEqual(await m.exclude(["1.0.0.0/23"], ["1.0.1.0/24"]), ["1.0.0.0/24"]);
-});
-
-test("exclude v4 nets #2", async function(t) {
-  t.deepEqual(await m.exclude(["1.0.0.0/24"], ["1.0.0.0/16"]), []);
-});
-
-test("exclude v6 nets", async function(t) {
-  t.deepEqual(await m.exclude(["::/127"], ["::1/128"]), ["::/128"]);
-});
-
-test("exclude v6 nets #2", async function(t) {
-  t.deepEqual(await m.exclude(["::/120"], ["::1/112"]), []);
-});
-
-test("exclude mixed", async function(t) {
-  t.deepEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/128"]), ["1.2.3.0/24", "::1/128"]);
-});
-
-test("exclude mixed #2", async function(t) {
-  t.deepEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/0", "0.0.0.0/0"]), []);
-});
-
-test("expand v4", async function(t) {
-  t.deepEqual(await m.expand(["1.2.3.0/31"]), ["1.2.3.0", "1.2.3.1"]);
-});
-
-test("expand v6", async function(t) {
-  t.deepEqual(await m.expand(["2008:db1::/127"]), ["2008:db1::", "2008:db1::1"]);
-});
-
-test("string argument", async function(t) {
-  t.deepEqual(await m.expand("2008:db1::/127"), ["2008:db1::", "2008:db1::1"]);
-});
-
-test("invalid argument", async function(t) {
-  await t.throws(m.expand());
-});
+main().then(exit).catch(exit);

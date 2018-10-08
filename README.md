@@ -4,10 +4,10 @@
 [![](https://api.travis-ci.org/silverwind/cidr-tools.svg?style=flat)](https://travis-ci.org/silverwind/cidr-tools)
 > Tools to work with IPv4 and IPv6 CIDR network lists
 
-With `python3`, `node` and `npm` available:
+## install
 
 ```bash
-$ npm i --save cidr-tools
+$ npm i cidr-tools
 ```
 ## Example
 
@@ -47,6 +47,12 @@ cidrTools.expand(['2001:db8::/126']).then(r => {
 
 - `networks` *String* or *Array*: A list of IPv4 and IPv6 networks.
 - Returns: A promise that resolves to an array of individual IPs contained in the networks.
+
+### cidrTools.overlap(networkA, networkB)
+
+- `networkA` *String*: A IPv4 and IPv6 network.
+- `networkB` *String*: A IPv4 and IPv6 network.
+- Returns: A boolean that indicates if the networks overlap each other.
 
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
