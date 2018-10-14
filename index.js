@@ -42,6 +42,10 @@ function prefix(size, v) {
   return bits[v] - (bigint(String(size)).toString(2).match(/0/g) || []).length;
 }
 
+function uniq(arr) {
+  return [...new Set(arr)];
+}
+
 function overlap(a, b) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
@@ -221,7 +225,7 @@ function mapNets(nets) {
 }
 
 cidrTools.merge = function(nets) {
-  nets = (Array.isArray(nets) ? nets : [nets]).map(parse);
+  nets = uniq((Array.isArray(nets) ? nets : [nets]).map(parse));
   const maps = mapNets(nets);
 
   const merged = {v4: [], v6: []};
@@ -265,8 +269,8 @@ cidrTools.merge = function(nets) {
 };
 
 cidrTools.exclude = function(basenets, exclnets) {
-  basenets = Array.isArray(basenets) ? basenets : [basenets];
-  exclnets = Array.isArray(exclnets) ? exclnets : [exclnets];
+  basenets = uniq(Array.isArray(basenets) ? basenets : [basenets]);
+  exclnets = uniq(Array.isArray(exclnets) ? exclnets : [exclnets]);
 
   basenets = cidrTools.merge(basenets);
   exclnets = cidrTools.merge(exclnets);
@@ -298,7 +302,7 @@ cidrTools.exclude = function(basenets, exclnets) {
 };
 
 cidrTools.expand = function(nets) {
-  nets = Array.isArray(nets) ? nets : [nets];
+  nets = uniq(Array.isArray(nets) ? nets : [nets]);
 
   let ips = [];
   for (const net of cidrTools.merge(nets)) {
