@@ -13,6 +13,7 @@ async function main() {
   assert.deepStrictEqual(await m.merge(["::0/128", "::1/128"]), ["::/127"]);
   assert.deepStrictEqual(await m.merge(["::0", "::1"]), ["::/127"]);
   assert.deepStrictEqual(await m.merge(["::0/128", "1.2.3.4/24", "::2/125"]), ["1.2.3.0/24", "::/125"]);
+  assert.deepStrictEqual(await m.merge(["6620:0:1ff2::/70"]), ["6620:0:1ff2::/70"]);
   assert.deepStrictEqual(await m.exclude(["1.0.0.0/23"], ["1.0.1.0/24"]), ["1.0.0.0/24"]);
   assert.deepStrictEqual(await m.exclude(["1.0.0.0/24"], ["1.0.0.0/16"]), []);
   assert.deepStrictEqual(await m.exclude(["::/127"], ["::1/128"]), ["::/128"]);

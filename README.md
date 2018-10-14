@@ -46,14 +46,14 @@ Returns an array of individual IPs contained in the networks.
 
 ### cidrTools.overlap(networkA, networkB)
 
-- `networkA` *String*: A CIDR or IP addresses.
-- `networkB` *String*: A CIDR or IP addresses.
+- `networkA` *String*: A CIDR or IP address.
+- `networkB` *String*: A CIDR or IP address.
 
 Returns a boolean that indicates if the networks overlap (intersect) each other.
 
 ### cidrTools.normalize(network)
 
-- `network` *String*: A CIDR or IP addresses.
+- `network` *String*: A CIDR or IP address.
 
 Returns a normalized representation of a IP or CIDR. Will not include a prefix on IPs.
 

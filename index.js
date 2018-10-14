@@ -136,13 +136,15 @@ function exclude(a, b, v) {
 }
 
 function biggestPowerOfTwo(num) {
-  if (num === 0) return 0;
-  return Math.pow(2, num.toString(2).length - 1);
+  if (num.compareTo(bigint("0")) === 0) return bigint("0");
+  const power = bigint(String(num.toString(2).length - 1));
+  return bigint("2").pow(power);
 }
 
 function subparts(part) {
-  const size = bigint(String(diff(part.end, part.start)));
-  const biggest = bigint(String(biggestPowerOfTwo(Number(size.toString()))));
+  const size = bigint(diff(part.end, part.start));
+  const biggest = biggestPowerOfTwo(size);
+
   if (size.equals(biggest)) return [part];
 
   const start = part.start.add(biggest).divide(biggest).multiply(biggest);
@@ -165,7 +167,8 @@ function subparts(part) {
 function diff(a, b) {
   if (a.constructor.name !== "BigInteger") a = bigint(a);
   if (b.constructor.name !== "BigInteger") b = bigint(b);
-  return Number((a.add(bigint("1"))).subtract(b).toString());
+  a = a.add(bigint("1"));
+  return a.subtract(b).toString();
 }
 
 function formatPart(part, v) {
