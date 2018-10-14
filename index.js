@@ -8,23 +8,34 @@ const naturalCompare = require("string-natural-compare");
 const Address4 = require("ip-address").Address4;
 const Address6 = require("ip-address").Address6;
 const BigInteger = require("jsbn").BigInteger;
+const net = require("net");
 
-function parse(net) {
-  if (!isCIDR(net)) {
-    throw new Error(`Network is not a CIDR: ${net}`);
+const bits = {
+  "v4": 32,
+  "v6": 128,
+};
+
+function parse(str) {
+  if (!isCIDR(str)) {
+    const version = net.isIP(str);
+    if (version) {
+      return new IPCIDR(cidrTools.normalize(`${str}/${bits[version]}`));
+    } else {
+      throw new Error(`Network is not a CIDR or IP: ${str}`);
+    }
+  } else {
+    return new IPCIDR(cidrTools.normalize(str));
   }
-  return new IPCIDR(cidrTools.normalize(net));
 }
 
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
-  const ip = cls.fromBigInteger(new BigInteger(number)).address;
-  return ipaddr.parse(ip).toString();
+  if (number.constructor.name !== "BigInteger") number = new BigInteger(number);
+  return ipaddr.parse(cls.fromBigInteger(number).address).toString();
 }
 
 function prefix(size, v) {
-  const base = v === "v6" ? 128 : 32;
-  return base - (new BigInteger(size).toString(2).match(/0/g) || []).length;
+  return bits[v] - (new BigInteger(String(size)).toString(2).match(/0/g) || []).length;
 }
 
 function overlap(a, b) {
@@ -53,6 +64,14 @@ function exclude(a, b, v) {
 
   // compareTo returns negative if left is less than right
   const parts = [];
+
+  //   aaa
+  //       bbb
+  //       aaa
+  //   bbb
+  if (aEnd.compareTo(bStart) < 0 || aStart.compareTo(bEnd) > 0) {
+    return a.cidr;
+  }
 
   //   aaa
   //   bbb
@@ -101,22 +120,53 @@ function exclude(a, b, v) {
     });
   }
 
-  return parts.map(part => {
-    const ip = format(part.start.toString(), v);
-    const pref = prefix(subBI(part.end, part.start), v);
-    return `${ip}/${pref}`;
-  });
+  const remaining = [];
+  for (const part of parts) {
+    for (const subpart of subparts(part, v)) {
+      remaining.push(formatPart(subpart, v));
+    }
+  }
+
+  // return remaining;
+  return cidrTools.merge(remaining);
 }
 
-function sub(a, b) {
-  a = new BigInteger(a);
-  b = new BigInteger(b);
-  return subBI(a, b);
+function biggestPowerOfTwo(num) {
+  if (num === 0) return 0;
+  return Math.pow(2, num.toString(2).length - 1);
 }
 
-function subBI(a, b) {
-  a = a.add(new BigInteger("1"));
-  return a.subtract(b).toString();
+function subparts(part) {
+  const size = new BigInteger(String(diff(part.end, part.start)));
+  const biggest = new BigInteger(String(biggestPowerOfTwo(Number(size.toString()))));
+  if (size.equals(biggest)) return [part];
+
+  const start = part.start.add(biggest).divide(biggest).multiply(biggest);
+  const end = start.add(biggest).subtract(new BigInteger("1"));
+  let parts = [{start, end}];
+
+  // // additional subnets on left side
+  if (!start.equals(part.start)) {
+    parts = parts.concat(subparts({start: part.start, end: start.subtract(new BigInteger("1"))}));
+  }
+
+  // additional subnets on right side
+  if (!end.equals(part.end)) {
+    parts = parts.concat(subparts({start: part.start, end: start.subtract(new BigInteger("1"))}));
+  }
+
+  return parts;
+}
+
+function diff(a, b) {
+  if (a.constructor.name !== "BigInteger") a = new BigInteger(a);
+  if (b.constructor.name !== "BigInteger") b = new BigInteger(b);
+  return Number((a.add(new BigInteger("1"))).subtract(b).toString());
+}
+
+function formatPart(part, v) {
+  const d = diff(part.end, part.start);
+  return format(part.start, v) + "/" + prefix(d, v);
 }
 
 cidrTools.normalize = cidr => {
@@ -153,22 +203,35 @@ cidrTools.merge = function(nets) {
 
     for (const [index, number] of numbers.entries()) {
       const marker = maps[v][number];
-      if (!start[v] && marker.start) start[v] = number;
-      if (marker.end) end[v] = number;
+
+      if (!start[v] && marker.start) {
+        start[v] = new BigInteger(number);
+      }
+      if (marker.end) {
+        end[v] = new BigInteger(number);
+      }
 
       if (marker.start) depth += 1;
       if (marker.end) depth -= 1;
 
+      if (!start[v] || !end[v]) continue;
+
       if (marker.end && depth === 0 && ((numbers[index + 1] - numbers[index]) > 1)) {
-        merged[v].push(format(start[v], v) + "/" + prefix(sub(end[v], start[v]), v));
+        for (const sub of subparts({start: start[v], end: end[v]})) {
+          merged[v].push(formatPart(sub, v));
+        }
         start[v] = null;
         end[v] = null;
       } else if (index === (numbers.length - 1)) {
-        merged[v].push(format(start[v], v) + "/" + prefix(sub(end[v], start[v]), v));
+        for (const sub of subparts({start: start[v], end: end[v]})) {
+          merged[v].push(formatPart(sub, v));
+        }
       }
     }
   }
 
+  merged.v4 = merged.v4.sort(naturalCompare);
+  merged.v6 = merged.v6.sort(naturalCompare);
   return merged.v4.concat(merged.v6);
 };
 
