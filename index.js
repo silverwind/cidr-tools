@@ -20,15 +20,15 @@ function bigint(numberstring) {
 }
 
 function parse(str) {
-  if (!isCidr(str)) {
+  if (isCidr(str)) {
+    return new IPCIDR(cidrTools.normalize(str));
+  } else {
     const version = net.isIP(str);
     if (version) {
-      return new IPCIDR(cidrTools.normalize(`${str}/${bits[version]}`));
+      return new IPCIDR(cidrTools.normalize(`${str}/${bits[`v${version}`]}`));
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
-  } else {
-    return new IPCIDR(cidrTools.normalize(str));
   }
 }
 
@@ -293,13 +293,10 @@ cidrTools.expand = function(nets) {
   return ips.map(normalizeIP);
 };
 
-cidrTools.overlap = (netA, netB) => {
-  const a = new IPCIDR(parse(netA));
-  const b = new IPCIDR(parse(netB));
+cidrTools.overlap = (a, b) => {
+  a = parse(a);
+  b = parse(b);
 
-  if (a.address.v4 !== b.address.v4) {
-    return false;
-  }
-
+  if (a.address.v4 !== b.address.v4) return false;
   return overlap(a, b);
 };
