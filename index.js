@@ -37,10 +37,6 @@ function format(number, v) {
   return cidrTools.normalize(cls.fromBigInteger(number).address);
 }
 
-function prefix(size, v) {
-  return bits[v] - (bigint(String(size)).toString(2).match(/0/g) || []).length;
-}
-
 function uniq(arr) {
   return [...new Set(arr)];
 }
@@ -143,7 +139,7 @@ function biggestPowerOfTwo(num) {
 }
 
 function subparts(part) {
-  const size = bigint(diff(part.end, part.start));
+  const size = diff(part.end, part.start);
   const biggest = biggestPowerOfTwo(size);
 
   if (size.equals(biggest)) return [part];
@@ -169,12 +165,14 @@ function diff(a, b) {
   if (a.constructor.name !== "BigInteger") a = bigint(a);
   if (b.constructor.name !== "BigInteger") b = bigint(b);
   a = a.add(bigint("1"));
-  return a.subtract(b).toString();
+  return a.subtract(b);
 }
 
 function formatPart(part, v) {
-  const d = diff(part.end, part.start);
-  return format(part.start, v) + "/" + prefix(d, v);
+  const ip = format(part.start, v);
+  const zeroes = diff(part.end, part.start).toString(2);
+  const prefix = bits[v] - (zeroes.match(/0/g) || []).length;
+  return `${ip}/${prefix}`;
 }
 
 cidrTools.normalize = (cidr) => {
