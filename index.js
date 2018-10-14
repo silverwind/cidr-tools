@@ -8,7 +8,6 @@ const naturalCompare = require("string-natural-compare");
 const Address4 = require("ip-address").Address4;
 const Address6 = require("ip-address").Address6;
 const BigInteger = require("jsbn").BigInteger;
-const net = require("net");
 
 const bits = {
   "v4": 32,
@@ -23,9 +22,9 @@ function parse(str) {
   if (isCidr(str)) {
     return new IPCIDR(cidrTools.normalize(str));
   } else {
-    const version = net.isIP(str);
-    if (version) {
-      return new IPCIDR(cidrTools.normalize(`${str}/${bits[`v${version}`]}`));
+    const parsed = new IPCIDR(cidrTools.normalize(str));
+    if (parsed && parsed.address) {
+      return new IPCIDR(cidrTools.normalize(`${str}/${bits[parsed.address.v4 ? "v4" : "v6"]}`));
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
@@ -189,10 +188,10 @@ cidrTools.normalize = (cidr) => {
     return `${ipv6Normalize(ip)}/${prefix}`;
   }
 
-  const ipVersion = net.isIP(cidr);
-  if (ipVersion === 4) {
+  const parsed = new IPCIDR(cidr);
+  if (parsed && parsed.address && parsed.address.v4) {
     return cidr;
-  } else if (ipVersion === 6) {
+  } else if (parsed && parsed.address && parsed.address.v4 === false) {
     return ipv6Normalize(cidr);
   }
 
