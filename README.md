@@ -23,7 +23,7 @@ cidrTools.normalize('0:0:0:0:0:0:0:0/0') //=> '::/0'
 
 ## API
 
-All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and properly sorted set of networks with IPv4 sorted before IPv6.
+All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
 
 ### cidrTools.merge(networks)
 

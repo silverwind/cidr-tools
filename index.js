@@ -62,15 +62,14 @@ function overlap(a, b) {
   return true;
 }
 
-// exclude b from a end return remainder numbers
 function exclude(a, b, v) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
   const aEnd = a.end({type: "bigInteger"});
   const bEnd = b.end({type: "bigInteger"});
+  const parts = [];
 
   // compareTo returns negative if left is less than right
-  const parts = [];
 
   //   aaa
   //       bbb
@@ -134,7 +133,6 @@ function exclude(a, b, v) {
     }
   }
 
-  // return remaining;
   return cidrTools.merge(remaining);
 }
 
