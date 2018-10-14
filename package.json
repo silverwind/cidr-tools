@@ -27,7 +27,6 @@
     "index.js"
   ],
   "dependencies": {
-    "execa": "^1.0.0",
     "ip-address": "^5.8.9",
     "ip-cidr": "^2.0.0",
     "ipaddr.js": "^1.8.1",
