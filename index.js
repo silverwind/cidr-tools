@@ -74,19 +74,19 @@ function exclude(a, b, v) {
   //       aaa
   //   bbb
   if (aEnd.compareTo(bStart) < 0 || aStart.compareTo(bEnd) > 0) {
-    return a.cidr;
+    return [a.cidr];
   }
 
   //   aaa
   //   bbb
   if (aStart.compareTo(bStart) === 0 && aEnd.compareTo(bEnd) === 0) {
-    return a.cidr;
+    return [];
   }
 
   //   aa
   //  bbbb
   if (aStart.compareTo(bStart) > 0 && aEnd.compareTo(bEnd) < 0) {
-    return a.cidr;
+    return [];
   }
 
   // aaaa
@@ -177,6 +177,10 @@ cidrTools.normalize = cidr => {
   return ipaddr.parseCIDR(cidr).toString();
 };
 
+function normalizeIP(ip) {
+  return ipaddr.parse(ip).toString();
+}
+
 function mapNets(nets) {
   const maps = {v4: {}, v6: {}};
   for (const net of nets) {
@@ -187,8 +191,17 @@ function mapNets(nets) {
     if (!maps[v][start]) maps[v][start] = {};
     if (!maps[v][end]) maps[v][end] = {};
 
-    maps[v][start].start = true;
-    maps[v][end].end = true;
+    if (maps[v][start].start) {
+      maps[v][start].start += 1;
+    } else {
+      maps[v][start].start = 1;
+    }
+
+    if (maps[v][end].end) {
+      maps[v][end].end += 1;
+    } else {
+      maps[v][end].end = 1;
+    }
   }
   return maps;
 }
@@ -215,10 +228,8 @@ cidrTools.merge = function(nets) {
         end[v] = bigint(number);
       }
 
-      if (marker.start) depth += 1;
-      if (marker.end) depth -= 1;
-
-      if (!start[v] || !end[v]) continue;
+      if (marker.start) depth += marker.start;
+      if (marker.end) depth -= marker.end;
 
       if (marker.end && depth === 0 && ((numbers[index + 1] - numbers[index]) > 1)) {
         for (const sub of subparts({start: start[v], end: end[v]})) {
@@ -279,7 +290,7 @@ cidrTools.expand = function(nets) {
   for (const net of cidrTools.merge(nets)) {
     ips = ips.concat((new IPCIDR(net)).toArray());
   }
-  return ips;
+  return ips.map(normalizeIP);
 };
 
 cidrTools.overlap = (netA, netB) => {
