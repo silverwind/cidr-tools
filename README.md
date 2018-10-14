@@ -18,36 +18,43 @@ cidrTools.merge(['1.0.0.0/24', '1.0.1.0/24']); //=> ['1.0.0.0/23']
 cidrTools.exclude(['::1/127'], ['::1/128']) //=> ['::/128']
 cidrTools.expand(['2001:db8::/126']) //=> ['2001:db8::', '2001:db8::1', '2001:db8::2', '2001:db8::3']
 cidrTools.overlap('1.0.0.0/24', '1.0.0.128/25') //=> true
+cidrTools.normalize('0:0:0:0:0:0:0:0/0') //=> '::/0'
 ```
 
 ## API
 
-All functions take CIDR addresses or single IP addresses. On single addresses, a size of `/32` or `/128` is assumed. The return values will always be a aggregated set of networks, sorted human-readable, with IPv4 sorted before IPv6.
+All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and properly sorted set of networks with IPv4 sorted before IPv6.
 
 ### cidrTools.merge(networks)
 
-- `networks` *String* or *Array*: A list of IPv4 and IPv6 networks.
+- `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns an array of merged networks.
 
 ### cidrTools.exclude(baseNetworks, excludeNetworks)
 
-- `baseNetworks` *String* or *Array*: A list of IPv4 and IPv6 networks.
-- `excludeNetworks` *String* or *Array*: A list of IPv4 and IPv6 networks to exclude from `baseNetworks`.
+- `baseNetworks` *String* or *Array*: One or more CIDR or IP addresses.
+- `excludeNetworks` *String* or *Array*: One or more CIDR or IP addresses to exclude from `baseNetworks`.
 
 Returns an array of merged remaining networks.
 
 ### cidrTools.expand(networks)
 
-- `networks` *String* or *Array*: A list of IPv4 and IPv6 networks.
+- `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns an array of individual IPs contained in the networks.
 
 ### cidrTools.overlap(networkA, networkB)
 
-- `networkA` *String*: A IPv4 and IPv6 network.
-- `networkB` *String*: A IPv4 and IPv6 network.
+- `networkA` *String*: A CIDR or IP addresses.
+- `networkB` *String*: A CIDR or IP addresses.
 
 Returns a boolean that indicates if the networks overlap (intersect) each other.
+
+### cidrTools.normalize(network)
+
+- `network` *String*: A CIDR or IP addresses.
+
+Returns a normalized representation of a IP or CIDR. Will not include a prefix on IPs.
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.

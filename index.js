@@ -174,12 +174,14 @@ function formatPart(part, v) {
 }
 
 cidrTools.normalize = cidr => {
-  return ipaddr.parseCIDR(cidr).toString();
+  if (isCidr(cidr)) {
+    return ipaddr.parseCIDR(cidr).toString();
+  } else if (net.isIP(cidr)) {
+    return ipaddr.parse(cidr).toString();
+  } else {
+    throw new Error(`Invalid network: ${cidr}`);
+  }
 };
-
-function normalizeIP(ip) {
-  return ipaddr.parse(ip).toString();
-}
 
 function mapNets(nets) {
   const maps = {v4: {}, v6: {}};
@@ -290,7 +292,7 @@ cidrTools.expand = function(nets) {
   for (const net of cidrTools.merge(nets)) {
     ips = ips.concat((new IPCIDR(net)).toArray());
   }
-  return ips.map(normalizeIP);
+  return ips.map(cidrTools.normalize);
 };
 
 cidrTools.overlap = (a, b) => {
