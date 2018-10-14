@@ -2,7 +2,7 @@
 
 const cidrTools = module.exports = {};
 const IPCIDR = require("ip-cidr");
-const isCIDR = require("is-cidr");
+const isCidr = require("is-cidr");
 const ipaddr = require("ipaddr.js");
 const naturalCompare = require("string-natural-compare");
 const Address4 = require("ip-address").Address4;
@@ -15,8 +15,12 @@ const bits = {
   "v6": 128,
 };
 
+function bigint(numberstring) {
+  return new BigInteger(numberstring);
+}
+
 function parse(str) {
-  if (!isCIDR(str)) {
+  if (!isCidr(str)) {
     const version = net.isIP(str);
     if (version) {
       return new IPCIDR(cidrTools.normalize(`${str}/${bits[version]}`));
@@ -30,12 +34,12 @@ function parse(str) {
 
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
-  if (number.constructor.name !== "BigInteger") number = new BigInteger(number);
+  if (number.constructor.name !== "BigInteger") number = bigint(number);
   return ipaddr.parse(cls.fromBigInteger(number).address).toString();
 }
 
 function prefix(size, v) {
-  return bits[v] - (new BigInteger(String(size)).toString(2).match(/0/g) || []).length;
+  return bits[v] - (bigint(String(size)).toString(2).match(/0/g) || []).length;
 }
 
 function overlap(a, b) {
@@ -92,7 +96,7 @@ function exclude(a, b, v) {
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) <= 0) {
     parts.push({
       start: aStart,
-      end: bStart.subtract(new BigInteger("1")),
+      end: bStart.subtract(bigint("1")),
     });
   }
 
@@ -102,7 +106,7 @@ function exclude(a, b, v) {
   //   bbb
   if (aStart.compareTo(bStart) >= 0 && aEnd.compareTo(bEnd) > 0) {
     parts.push({
-      start: bEnd.add(new BigInteger("1")),
+      start: bEnd.add(bigint("1")),
       end: aEnd,
     });
   }
@@ -112,10 +116,10 @@ function exclude(a, b, v) {
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) > 0) {
     parts.push({
       start: aStart,
-      end: bStart.subtract(new BigInteger("1")),
+      end: bStart.subtract(bigint("1")),
     });
     parts.push({
-      start: bEnd.add(new BigInteger("1")),
+      start: bEnd.add(bigint("1")),
       end: aEnd,
     });
   }
@@ -137,31 +141,31 @@ function biggestPowerOfTwo(num) {
 }
 
 function subparts(part) {
-  const size = new BigInteger(String(diff(part.end, part.start)));
-  const biggest = new BigInteger(String(biggestPowerOfTwo(Number(size.toString()))));
+  const size = bigint(String(diff(part.end, part.start)));
+  const biggest = bigint(String(biggestPowerOfTwo(Number(size.toString()))));
   if (size.equals(biggest)) return [part];
 
   const start = part.start.add(biggest).divide(biggest).multiply(biggest);
-  const end = start.add(biggest).subtract(new BigInteger("1"));
+  const end = start.add(biggest).subtract(bigint("1"));
   let parts = [{start, end}];
 
   // // additional subnets on left side
   if (!start.equals(part.start)) {
-    parts = parts.concat(subparts({start: part.start, end: start.subtract(new BigInteger("1"))}));
+    parts = parts.concat(subparts({start: part.start, end: start.subtract(bigint("1"))}));
   }
 
   // additional subnets on right side
   if (!end.equals(part.end)) {
-    parts = parts.concat(subparts({start: part.start, end: start.subtract(new BigInteger("1"))}));
+    parts = parts.concat(subparts({start: part.start, end: start.subtract(bigint("1"))}));
   }
 
   return parts;
 }
 
 function diff(a, b) {
-  if (a.constructor.name !== "BigInteger") a = new BigInteger(a);
-  if (b.constructor.name !== "BigInteger") b = new BigInteger(b);
-  return Number((a.add(new BigInteger("1"))).subtract(b).toString());
+  if (a.constructor.name !== "BigInteger") a = bigint(a);
+  if (b.constructor.name !== "BigInteger") b = bigint(b);
+  return Number((a.add(bigint("1"))).subtract(b).toString());
 }
 
 function formatPart(part, v) {
@@ -178,7 +182,7 @@ function mapNets(nets) {
   for (const net of nets) {
     const start = net.start({type: "bigInteger"}).toString();
     const end = net.end({type: "bigInteger"}).toString();
-    const v = isCIDR.v4(net) ? "v4" : "v6";
+    const v = `v${isCidr(net)}`;
 
     if (!maps[v][start]) maps[v][start] = {};
     if (!maps[v][end]) maps[v][end] = {};
@@ -205,10 +209,10 @@ cidrTools.merge = function(nets) {
       const marker = maps[v][number];
 
       if (!start[v] && marker.start) {
-        start[v] = new BigInteger(number);
+        start[v] = bigint(number);
       }
       if (marker.end) {
-        end[v] = new BigInteger(number);
+        end[v] = bigint(number);
       }
 
       if (marker.start) depth += 1;
@@ -246,11 +250,11 @@ cidrTools.exclude = function(basenets, exclnets) {
   const excls = {v4: [], v6: []};
 
   for (const basenet of basenets) {
-    bases[isCIDR.v4(basenet) ? "v4" : "v6"].push(basenet);
+    bases[`v${isCidr(basenet)}`].push(basenet);
   }
 
   for (const exclnet of exclnets) {
-    excls[isCIDR.v4(exclnet) ? "v4" : "v6"].push(exclnet);
+    excls[`v${isCidr(exclnet)}`].push(exclnet);
   }
 
   for (const v of ["v4", "v6"]) {
