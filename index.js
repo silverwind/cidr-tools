@@ -3,7 +3,7 @@
 const cidrTools = module.exports = {};
 const IPCIDR = require("ip-cidr");
 const isCidr = require("is-cidr");
-const ipaddr = require("ipaddr.js");
+const ipv6Normalize = require("ipv6-normalize");
 const naturalCompare = require("string-natural-compare");
 const Address4 = require("ip-address").Address4;
 const Address6 = require("ip-address").Address6;
@@ -35,7 +35,7 @@ function parse(str) {
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
   if (number.constructor.name !== "BigInteger") number = bigint(number);
-  return ipaddr.parse(cls.fromBigInteger(number).address).toString();
+  return cidrTools.normalize(cls.fromBigInteger(number).address);
 }
 
 function prefix(size, v) {
@@ -173,14 +173,23 @@ function formatPart(part, v) {
   return format(part.start, v) + "/" + prefix(d, v);
 }
 
-cidrTools.normalize = cidr => {
-  if (isCidr(cidr)) {
-    return ipaddr.parseCIDR(cidr).toString();
-  } else if (net.isIP(cidr)) {
-    return ipaddr.parse(cidr).toString();
-  } else {
-    throw new Error(`Invalid network: ${cidr}`);
+cidrTools.normalize = (cidr) => {
+  const cidrVersion = isCidr(cidr);
+  if (cidrVersion === 4) {
+    return cidr;
+  } else if (cidrVersion === 6) {
+    const [ip, prefix] = cidr.split("/");
+    return `${ipv6Normalize(ip)}/${prefix}`;
   }
+
+  const ipVersion = net.isIP(cidr);
+  if (ipVersion === 4) {
+    return cidr;
+  } else if (ipVersion === 6) {
+    return ipv6Normalize(cidr);
+  }
+
+  throw new Error(`Invalid network: ${cidr}`);
 };
 
 function mapNets(nets) {
