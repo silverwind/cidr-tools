@@ -46,10 +46,10 @@ Returns an array of individual IPs contained in the networks.
 
 ### cidrTools.overlap(networkA, networkB)
 
-- `networkA` *String*: A CIDR or IP address.
-- `networkB` *String*: A CIDR or IP address.
+- `networksA` *String* or *Array*: One or more CIDR or IP address.
+- `networksB` *String* or *Array*: One or more CIDR or IP address.
 
-Returns a boolean that indicates if the networks overlap (intersect) each other.
+Returns a boolean that indicates if the networks A overlap (intersect) with networks B.
 
 ### cidrTools.normalize(network)
 

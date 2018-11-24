@@ -307,9 +307,23 @@ cidrTools.expand = function(nets) {
 };
 
 cidrTools.overlap = (a, b) => {
-  a = parse(a);
-  b = parse(b);
+  const aNets = uniq(Array.isArray(a) ? a : [a]);
+  const bNets = uniq(Array.isArray(b) ? b : [b]);
 
-  if (a.address.v4 !== b.address.v4) return false;
-  return overlap(a, b);
+  for (let a of aNets) {
+    for (let b of bNets) {
+      a = parse(a);
+      b = parse(b);
+
+      if (a.address.v4 !== b.address.v4) {
+        continue;
+      }
+
+      if (overlap(a, b)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 };
