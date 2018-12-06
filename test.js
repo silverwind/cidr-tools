@@ -21,6 +21,7 @@ async function main() {
   assert.deepStrictEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/128"]), ["1.2.3.0/24", "::1/128"]);
   assert.deepStrictEqual(await m.exclude(["::0/127", "1.2.3.0/24"], ["::/0", "0.0.0.0/0"]), []);
   assert.deepStrictEqual(await m.exclude(["1.0.0.0/24"], ["1.0.0.0"]), ["1.0.0.1/32", "1.0.0.2/31", "1.0.0.4/30", "1.0.0.8/29", "1.0.0.16/28", "1.0.0.32/27", "1.0.0.64/26", "1.0.0.128/25"]);
+  assert.deepStrictEqual(await m.exclude(["10.11.0.0/16"], ["10.11.70.0/24"]), ["10.11.0.0/18", "10.11.64.0/22", "10.11.68.0/23", "10.11.71.0/24", "10.11.72.0/21", "10.11.80.0/20", "10.11.96.0/19", "10.11.128.0/17"]);
   assert.deepStrictEqual(await m.expand(["1.2.3.0/31"]), ["1.2.3.0", "1.2.3.1"]);
   assert.deepStrictEqual(await m.expand(["1::/126"]), ["1::", "1::1", "1::2", "1::3"]);
   assert.deepStrictEqual(await m.expand(["2008:db1::/127"]), ["2008:db1::", "2008:db1::1"]);

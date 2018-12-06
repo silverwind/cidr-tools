@@ -14,9 +14,11 @@ const bits = {
   "v6": 128,
 };
 
-function bigint(numberstring) {
-  return new BigInteger(numberstring);
-}
+const bigint = numberstring => new BigInteger(numberstring);
+
+const zero = bigint("0");
+const one = bigint("1");
+const two = bigint("2");
 
 function parse(str) {
   if (isCidr(str)) {
@@ -58,6 +60,7 @@ function overlap(a, b) {
   return true;
 }
 
+// exclude b from a and return remainder cidrs
 function exclude(a, b, v) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
@@ -67,11 +70,11 @@ function exclude(a, b, v) {
 
   // compareTo returns negative if left is less than right
 
-  //   aaa
-  //       bbb
   //       aaa
   //   bbb
-  if (aEnd.compareTo(bStart) < 0 || aStart.compareTo(bEnd) > 0) {
+  //   aaa
+  //       bbb
+  if (aStart.compareTo(bEnd) > 0 || aEnd.compareTo(bStart) < 0) {
     return [a.cidr];
   }
 
@@ -133,9 +136,9 @@ function exclude(a, b, v) {
 }
 
 function biggestPowerOfTwo(num) {
-  if (num.compareTo(bigint("0")) === 0) return bigint("0");
+  if (num.compareTo(zero) === 0) return zero;
   const power = bigint(String(num.toString(2).length - 1));
-  return bigint("2").pow(power);
+  return two.pow(power);
 }
 
 function subparts(part) {
@@ -144,18 +147,27 @@ function subparts(part) {
 
   if (size.equals(biggest)) return [part];
 
-  const start = part.start.add(biggest).divide(biggest).multiply(biggest);
-  const end = start.add(biggest).subtract(bigint("1"));
+  let start, end;
+  if (part.start.remainder(biggest).equals(zero)) {
+    // start is matching on the size-defined boundary - ex: 0-12, use 0-8
+    start = part.start;
+    end = start.add(biggest).subtract(one);
+  } else {
+    // start is not matching on the size-defined boundary - 4-16, use 8-16
+    start = part.end.divide(biggest).multiply(biggest);
+    end = start.add(biggest).subtract(one);
+  }
+
   let parts = [{start, end}];
 
   // // additional subnets on left side
   if (!start.equals(part.start)) {
-    parts = parts.concat(subparts({start: part.start, end: start.subtract(bigint("1"))}));
+    parts = parts.concat(subparts({start: part.start, end: start.subtract(one)}));
   }
 
   // additional subnets on right side
   if (!end.equals(part.end)) {
-    parts = parts.concat(subparts({start: part.start, end: start.subtract(bigint("1"))}));
+    parts = parts.concat(subparts({start: end.add(one), end: part.end}));
   }
 
   return parts;
