@@ -163,8 +163,6 @@ function subparts(part) {
     }
   }
 
-  if (end.compareTo(part.end) > 0) process.exit();
-
   let parts = [{start, end}];
 
   // additional subnets on left side
