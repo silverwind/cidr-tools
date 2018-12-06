@@ -145,22 +145,29 @@ function subparts(part) {
   const size = diff(part.end, part.start);
   const biggest = biggestPowerOfTwo(size);
 
-  if (size.equals(biggest)) return [part];
-
   let start, end;
-  if (part.start.remainder(biggest).equals(zero)) {
+  if (size.equals(biggest) && part.start.add(size).compareTo(part.end) === 0) {
+    return [part];
+  } else if (part.start.remainder(biggest).equals(zero)) {
     // start is matching on the size-defined boundary - ex: 0-12, use 0-8
     start = part.start;
     end = start.add(biggest).subtract(one);
   } else {
     // start is not matching on the size-defined boundary - 4-16, use 8-16
     start = part.end.divide(biggest).multiply(biggest);
-    end = start.add(biggest).subtract(one);
+    if (start.add(biggest).subtract(one).compareTo(part.end) > 0) {
+      // divide will floor to nearest integer
+      end = start.add(biggest.divide(two)).subtract(one);
+    } else {
+      end = start.add(biggest).subtract(one);
+    }
   }
+
+  if (end.compareTo(part.end) > 0) process.exit();
 
   let parts = [{start, end}];
 
-  // // additional subnets on left side
+  // additional subnets on left side
   if (!start.equals(part.start)) {
     parts = parts.concat(subparts({start: part.start, end: start.subtract(one)}));
   }
@@ -295,12 +302,14 @@ cidrTools.exclude = function(basenets, exclnets) {
 
   for (const v of ["v4", "v6"]) {
     for (const exclcidr of excls[v]) {
-      const excl = parse(exclcidr);
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parse(basecidr);
+        const excl = parse(exclcidr);
         const remainders = exclude(base, excl, v);
-        bases[v] = bases[v].concat(remainders);
-        bases[v].splice(index, 1);
+        if (base.toString() !== remainders.toString()) {
+          bases[v] = bases[v].concat(remainders);
+          bases[v].splice(index, 1);
+        }
       }
     }
   }
