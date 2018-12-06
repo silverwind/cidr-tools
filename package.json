@@ -28,16 +28,16 @@
   ],
   "dependencies": {
     "ip-address": "^5.8.9",
-    "ip-cidr": "^2.0.0",
+    "ip-cidr": "^2.0.1",
     "ipv6-normalize": "^1.0.1",
     "is-cidr": "^3.0.0",
     "jsbn": "^1.1.0",
-    "string-natural-compare": "^2.0.2"
+    "string-natural-compare": "^2.0.3"
   },
   "devDependencies": {
-    "eslint": "^5.7.0",
-    "eslint-config-silverwind": "^2.0.9",
-    "updates": "^4.5.2",
-    "ver": "^3.0.0"
+    "eslint": "^5.9.0",
+    "eslint-config-silverwind": "^2.0.11",
+    "updates": "^5.4.3",
+    "ver": "^3.0.1"
   }
 }
