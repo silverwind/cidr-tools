@@ -143,7 +143,7 @@ function biggestPowerOfTwo(num) {
 
 function subparts(part) {
   const size = diff(part.end, part.start);
-  const biggest = biggestPowerOfTwo(size);
+  let biggest = biggestPowerOfTwo(size);
 
   let start, end;
   if (size.equals(biggest) && part.start.add(size).compareTo(part.end) === 0) {
@@ -153,15 +153,21 @@ function subparts(part) {
     start = part.start;
     end = start.add(biggest).subtract(one);
   } else {
-    // start is not matching on the size-defined boundary - 4-16, use 8-16
     start = part.end.divide(biggest).multiply(biggest);
+    // start is not matching on the size-defined boundary - 4-16, use 8-16
     if (start.add(biggest).subtract(one).compareTo(part.end) > 0) {
+      biggest = biggest.divide(two);
       // divide will floor to nearest integer
-      end = start.add(biggest.divide(two)).subtract(one);
+      start = part.end.divide(biggest).subtract(one).multiply(biggest);
+      end = start.add(biggest).subtract(one);
     } else {
+      start = part.end.divide(biggest).multiply(biggest);
       end = start.add(biggest).subtract(one);
     }
   }
+
+  if (part.start.compareTo(zero) < 0) process.exit();
+  if (part.end.compareTo(zero) < 0) process.exit();
 
   let parts = [{start, end}];
 
