@@ -166,9 +166,6 @@ function subparts(part) {
     }
   }
 
-  if (part.start.compareTo(zero) < 0) process.exit();
-  if (part.end.compareTo(zero) < 0) process.exit();
-
   let parts = [{start, end}];
 
   // additional subnets on left side
