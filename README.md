@@ -44,17 +44,17 @@ Returns an array of merged remaining networks.
 
 Returns an array of individual IPs contained in the networks.
 
-### cidrTools.overlap(networkA, networkB)
+### cidrTools.overlap(networksA, networksB)
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
 
-Returns a boolean that indicates if the networks A overlap (intersect) with networks B.
+Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`.
 
 ### cidrTools.normalize(network)
 
 - `network` *String*: A CIDR or IP address.
 
-Returns a normalized representation of a IP or CIDR. Will not include a prefix on IPs.
+Returns a normalized representation of a IP or CIDR. Will not include a prefix on single IPs.
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
