@@ -97,7 +97,7 @@ function exclude(a, b, v) {
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) <= 0) {
     parts.push({
       start: aStart,
-      end: bStart.subtract(bigint("1")),
+      end: bStart.subtract(one),
     });
   }
 
@@ -107,7 +107,7 @@ function exclude(a, b, v) {
   //   bbb
   if (aStart.compareTo(bStart) >= 0 && aEnd.compareTo(bEnd) > 0) {
     parts.push({
-      start: bEnd.add(bigint("1")),
+      start: bEnd.add(one),
       end: aEnd,
     });
   }
@@ -117,10 +117,10 @@ function exclude(a, b, v) {
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) > 0) {
     parts.push({
       start: aStart,
-      end: bStart.subtract(bigint("1")),
+      end: bStart.subtract(one),
     });
     parts.push({
-      start: bEnd.add(bigint("1")),
+      start: bEnd.add(one),
       end: aEnd,
     });
   }
@@ -184,7 +184,7 @@ function subparts(part) {
 function diff(a, b) {
   if (a.constructor.name !== "BigInteger") a = bigint(a);
   if (b.constructor.name !== "BigInteger") b = bigint(b);
-  a = a.add(bigint("1"));
+  a = a.add(one);
   return a.subtract(b);
 }
 
