@@ -35,9 +35,9 @@
     "string-natural-compare": "^2.0.3"
   },
   "devDependencies": {
-    "eslint": "^5.11.0",
-    "eslint-config-silverwind": "^2.0.12",
-    "updates": "^6.0.2",
+    "eslint": "^5.12.1",
+    "eslint-config-silverwind": "^2.0.14",
+    "updates": "^6.2.1",
     "ver": "^3.0.1"
   }
 }
