@@ -24,8 +24,10 @@
     "node": ">=8"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
+  "types": "./index.d.ts",
   "dependencies": {
     "ip-address": "^5.8.9",
     "ip-cidr": "^2.0.2",
