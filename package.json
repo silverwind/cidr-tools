@@ -29,7 +29,7 @@
   ],
   "types": "./index.d.ts",
   "dependencies": {
-    "ip-address": "^5.8.9",
+    "ip-address": "^5.9.0",
     "ip-cidr": "^2.0.2",
     "ipv6-normalize": "^1.0.1",
     "is-cidr": "^3.0.0",
@@ -37,9 +37,9 @@
     "string-natural-compare": "^2.0.3"
   },
   "devDependencies": {
-    "eslint": "^5.12.1",
-    "eslint-config-silverwind": "^2.0.14",
-    "updates": "^6.2.1",
-    "ver": "^3.0.1"
+    "eslint": "^5.16.0",
+    "eslint-config-silverwind": "^2.1.0",
+    "updates": "^8.0.1",
+    "ver": "^4.2.0"
   }
 }
