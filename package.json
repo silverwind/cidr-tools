@@ -38,8 +38,8 @@
   },
   "devDependencies": {
     "eslint": "^5.16.0",
-    "eslint-config-silverwind": "^2.1.0",
-    "updates": "^8.0.1",
-    "ver": "^4.2.0"
+    "eslint-config-silverwind": "^3.0.3",
+    "updates": "^8.1.0",
+    "ver": "^4.4.1"
   }
 }
