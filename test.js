@@ -40,6 +40,7 @@ async function main() {
   assert.deepStrictEqual(await m.overlap(["1.0.0.0", "2.0.0.0"], ["0.0.0.0/6"]), true);
   assert.deepStrictEqual(await m.overlap("::1", "0.0.0.1"), false);
   assert.deepStrictEqual(await m.overlap("fe80:1:0:0:0:0:0:0", "fe80::/10"), true);
+  assert.deepStrictEqual(await m.overlap("::1", ["0.0.0.1", "0.0.0.2"]), false);
   assert.deepStrictEqual(await m.normalize("0:0:0:0:0:0:0:0"), "::");
   assert.deepStrictEqual(await m.normalize("0:0:0:0:0:0:0:0/0"), "::/0");
 }

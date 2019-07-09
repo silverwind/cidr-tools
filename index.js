@@ -347,16 +347,16 @@ cidrTools.overlap = (a, b) => {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 
-  for (let a of aNets) {
-    for (let b of bNets) {
-      a = parse(a);
-      b = parse(b);
+  for (const a of aNets) {
+    const aParsed = parse(a);
+    for (const b of bNets) {
+      const bParsed = parse(b);
 
-      if (a.address.v4 !== b.address.v4) {
+      if (aParsed.address.v4 !== bParsed.address.v4) {
         continue;
       }
 
-      if (overlap(a, b)) {
+      if (overlap(aParsed, bParsed)) {
         return true;
       }
     }
