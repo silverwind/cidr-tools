@@ -55,6 +55,6 @@ Returns a boolean that indicates if `networksA` overlap (intersect) with `networ
 
 - `network` *String*: A CIDR or IP address.
 
-Returns a normalized representation of a IP or CIDR. Will not include a prefix on single IPs.
+Returns a string with a normalized representation of a IP or CIDR. Will not include a prefix on single IPs.
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
