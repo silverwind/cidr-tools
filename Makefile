@@ -17,17 +17,17 @@ update:
 .PHONY: patch
 patch:
 	$(MAKE) test
-	npx ver patch
+	npx versions -C patch
 	$(MAKE) publish
 
 .PHONY: minor
 minor:
 	$(MAKE) test
-	npx ver minor
+	npx versions -C minor
 	$(MAKE) publish
 
 .PHONY: major
 major:
 	$(MAKE) test
-	npx ver major
+	npx versions -C major
 	$(MAKE) publish

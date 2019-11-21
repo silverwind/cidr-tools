@@ -40,6 +40,6 @@
     "eslint": "^6.0.1",
     "eslint-config-silverwind": "^4.0.2",
     "updates": "^8.2.1",
-    "ver": "^5.1.2"
+    "versions": "7.0.2"
   }
 }
