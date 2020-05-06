@@ -29,17 +29,17 @@
   ],
   "types": "./index.d.ts",
   "dependencies": {
-    "ip-address": "^6.1.0",
-    "ip-cidr": "^2.0.6",
+    "ip-address": "^6.3.0",
+    "ip-cidr": "^2.0.12",
     "ipv6-normalize": "^1.0.1",
     "is-cidr": "^3.1.0",
     "jsbn": "^1.1.0",
-    "string-natural-compare": "^3.0.0"
+    "string-natural-compare": "^3.0.1"
   },
   "devDependencies": {
-    "eslint": "6.6.0",
-    "eslint-config-silverwind": "5.0.0",
-    "updates": "9.1.0",
-    "versions": "7.0.2"
+    "eslint": "6.8.0",
+    "eslint-config-silverwind": "11.0.4",
+    "updates": "10.2.10",
+    "versions": "8.2.7"
   }
 }
