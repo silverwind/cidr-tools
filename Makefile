@@ -1,5 +1,5 @@
 test:
-	yarn -s run eslint --color .
+	yarn -s run eslint .
 	node --trace-deprecation --throw-deprecation --trace-warnings test.js
 
 publish:
@@ -10,8 +10,8 @@ deps:
 	rm -rf node_modules
 	yarn
 
-update: rollup
-	node updates -cu
+update:
+	yarn -s run updates -u
 	$(MAKE) deps
 
 patch: test
