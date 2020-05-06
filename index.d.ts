@@ -12,7 +12,7 @@ interface CIDRTools {
   exclude(baseNetworks: Networks, excludeNetworks: Networks): Network[];
   expand(networks: Networks): Network[];
   overlap(networksA: Networks, networksB: Networks): boolean;
-  normalize(Network): Network;
+  normalize(cidr: Network): Network;
 }
 
 declare const cidrTools : CIDRTools;
