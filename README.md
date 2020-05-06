@@ -1,7 +1,6 @@
 # cidr-tools
 [![](https://img.shields.io/npm/v/cidr-tools.svg?style=flat)](https://www.npmjs.org/package/cidr-tools)
 [![](https://img.shields.io/npm/dm/cidr-tools.svg)](https://www.npmjs.org/package/cidr-tools)
-[![](https://api.travis-ci.org/silverwind/cidr-tools.svg?style=flat)](https://travis-ci.org/silverwind/cidr-tools)
 > Tools to work with IPv4 and IPv6 CIDR network lists
 
 ## Install

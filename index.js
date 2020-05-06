@@ -5,9 +5,8 @@ const IPCIDR = require("ip-cidr");
 const isCidr = require("is-cidr");
 const ipv6Normalize = require("ipv6-normalize");
 const naturalCompare = require("string-natural-compare");
-const Address4 = require("ip-address").Address4;
-const Address6 = require("ip-address").Address6;
-const BigInteger = require("jsbn").BigInteger;
+const {Address4, Address6} = require("ip-address");
+const {BigInteger} = require("jsbn");
 
 const bits = {
   "v4": 32,
