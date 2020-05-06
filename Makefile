@@ -1,6 +1,6 @@
 test:
-	yarn -s run eslint .
-	node --trace-deprecation --throw-deprecation --trace-warnings test.js
+	yarn -s run eslint --color .
+	yarn -s run jest --color
 
 publish:
 	git push -u --tags origin master
