@@ -8,6 +8,9 @@
   "scripts": {
     "test": "make test"
   },
+  "engines": {
+    "node": ">=10"
+  },
   "keywords": [
     "cidr",
     "ip",
@@ -20,9 +23,6 @@
     "exclude",
     "expand"
   ],
-  "engines": {
-    "node": ">=8"
-  },
   "files": [
     "index.js",
     "index.d.ts"
