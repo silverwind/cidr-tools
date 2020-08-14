@@ -2,6 +2,7 @@
 
 const cidrTools = module.exports = {};
 const IPCIDR = require("ip-cidr");
+const isIp = require("is-ip");
 const isCidr = require("is-cidr");
 const ipv6Normalize = require("ipv6-normalize");
 const naturalCompare = require("string-natural-compare");
@@ -23,9 +24,9 @@ function parse(str) {
   if (isCidr(str)) {
     return new IPCIDR(cidrTools.normalize(str));
   } else {
-    const parsed = new IPCIDR(cidrTools.normalize(str));
-    if (parsed && parsed.address) {
-      return new IPCIDR(cidrTools.normalize(`${str}/${bits[parsed.address.v4 ? "v4" : "v6"]}`));
+    const version = isIp.version(str);
+    if (version) {
+      return new IPCIDR(cidrTools.normalize(`${str}/${bits[`v${version}`]}`));
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
@@ -218,7 +219,7 @@ cidrTools.normalize = (cidr) => {
     return `${ipv6Normalize(ip)}/${prefix}`;
   }
 
-  const parsed = new IPCIDR(cidr);
+  const parsed = parse(cidr);
   if (parsed && parsed.address && parsed.address.v4) {
     return cidr;
   } else if (parsed && parsed.address && parsed.address.v4 === false) {
