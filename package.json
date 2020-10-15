@@ -5,9 +5,6 @@
   "description": "Tools to work with IPv4 and IPv6 CIDR network lists",
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
-  "scripts": {
-    "test": "make test"
-  },
   "engines": {
     "node": ">=10"
   },
