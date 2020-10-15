@@ -1,7 +1,6 @@
 "use strict";
 
 const cidrTools = require(".");
-const {test, expect} = global;
 
 test("merge", () => {
   expect(cidrTools.merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
