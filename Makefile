@@ -19,9 +19,10 @@ publish: node_modules
 	npm publish
 
 update: node_modules
-	yarn -s run updates -u
-	rm -rf node_modules
-	$(MAKE) --no-print-directory deps
+	yarn -s run updates -cu
+	@rm yarn.lock
+	@yarn -s
+	@touch node_modules
 
 patch: node_modules test
 	yarn -s run versions -C patch

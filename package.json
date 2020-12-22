@@ -26,8 +26,8 @@
   ],
   "types": "./index.d.ts",
   "dependencies": {
-    "ip-address": "^7.0.1",
-    "ip-cidr": "^2.1.0",
+    "ip-address": "^7.1.0",
+    "ip-cidr": "^2.1.1",
     "ipv6-normalize": "^1.0.1",
     "is-cidr": "^4.0.2",
     "is-ip": "^3.1.0",
@@ -35,11 +35,11 @@
     "string-natural-compare": "^3.0.1"
   },
   "devDependencies": {
-    "eslint": "7.11.0",
-    "eslint-config-silverwind": "21.0.1",
-    "jest": "26.5.3",
-    "updates": "11.2.5",
-    "versions": "8.4.3"
+    "eslint": "7.16.0",
+    "eslint-config-silverwind": "27.0.0",
+    "jest": "26.6.3",
+    "updates": "11.4.1",
+    "versions": "8.4.4"
   },
   "jest": {
     "verbose": false,
