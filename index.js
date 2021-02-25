@@ -1,6 +1,5 @@
 "use strict";
 
-const cidrTools = module.exports = {};
 const IPCIDR = require("ip-cidr");
 const isIp = require("is-ip");
 const isCidr = require("is-cidr");
@@ -20,13 +19,32 @@ const zero = bigint("0");
 const one = bigint("1");
 const two = bigint("2");
 
+module.exports.normalize = (cidr) => {
+  const cidrVersion = isCidr(cidr);
+  if (cidrVersion === 4) {
+    return cidr;
+  } else if (cidrVersion === 6) {
+    const [ip, prefix] = cidr.split("/");
+    return `${ipv6Normalize(ip)}/${prefix}`;
+  }
+
+  const parsed = parse(cidr);
+  if (parsed && parsed.address && parsed.address.v4) {
+    return cidr;
+  } else if (parsed && parsed.address && parsed.address.v4 === false) {
+    return ipv6Normalize(cidr);
+  }
+
+  throw new Error(`Invalid network: ${cidr}`);
+};
+
 function parse(str) {
   if (isCidr(str)) {
-    return new IPCIDR(cidrTools.normalize(str));
+    return new IPCIDR(module.exports.normalize(str));
   } else {
     const version = isIp.version(str);
     if (version) {
-      return new IPCIDR(cidrTools.normalize(`${str}/${bits[`v${version}`]}`));
+      return new IPCIDR(module.exports.normalize(`${str}/${bits[`v${version}`]}`));
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
@@ -36,14 +54,14 @@ function parse(str) {
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
   if (!(number instanceof BigInteger)) number = bigint(number);
-  return cidrTools.normalize(cls.fromBigInteger(number).address);
+  return module.exports.normalize(cls.fromBigInteger(number).address);
 }
 
 function uniq(arr) {
   return [...new Set(arr)];
 }
 
-function overlap(a, b) {
+function doNetsOverlap(a, b) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
   const aEnd = a.end({type: "bigInteger"});
@@ -61,7 +79,7 @@ function overlap(a, b) {
 }
 
 // exclude b from a and return remainder cidrs
-function exclude(a, b, v) {
+function excludeNets(a, b, v) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
   const aEnd = a.end({type: "bigInteger"});
@@ -132,7 +150,7 @@ function exclude(a, b, v) {
     }
   }
 
-  return cidrTools.merge(remaining);
+  return module.exports.merge(remaining);
 }
 
 function biggestPowerOfTwo(num) {
@@ -210,25 +228,6 @@ function formatPart(part, v) {
   return `${ip}/${prefix}`;
 }
 
-cidrTools.normalize = (cidr) => {
-  const cidrVersion = isCidr(cidr);
-  if (cidrVersion === 4) {
-    return cidr;
-  } else if (cidrVersion === 6) {
-    const [ip, prefix] = cidr.split("/");
-    return `${ipv6Normalize(ip)}/${prefix}`;
-  }
-
-  const parsed = parse(cidr);
-  if (parsed && parsed.address && parsed.address.v4) {
-    return cidr;
-  } else if (parsed && parsed.address && parsed.address.v4 === false) {
-    return ipv6Normalize(cidr);
-  }
-
-  throw new Error(`Invalid network: ${cidr}`);
-};
-
 function mapNets(nets) {
   const maps = {v4: {}, v6: {}};
   for (const net of nets) {
@@ -254,7 +253,7 @@ function mapNets(nets) {
   return maps;
 }
 
-cidrTools.merge = function(nets) {
+module.exports.merge = function(nets) {
   nets = uniq((Array.isArray(nets) ? nets : [nets]).map(parse));
   const maps = mapNets(nets);
 
@@ -298,12 +297,12 @@ cidrTools.merge = function(nets) {
   return merged.v4.concat(merged.v6);
 };
 
-cidrTools.exclude = function(basenets, exclnets) {
+module.exports.exclude = (basenets, exclnets) => {
   basenets = uniq(Array.isArray(basenets) ? basenets : [basenets]);
   exclnets = uniq(Array.isArray(exclnets) ? exclnets : [exclnets]);
 
-  basenets = cidrTools.merge(basenets);
-  exclnets = cidrTools.merge(exclnets);
+  basenets = module.exports.merge(basenets);
+  exclnets = module.exports.merge(exclnets);
 
   const bases = {v4: [], v6: []};
   const excls = {v4: [], v6: []};
@@ -321,7 +320,7 @@ cidrTools.exclude = function(basenets, exclnets) {
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parse(basecidr);
         const excl = parse(exclcidr);
-        const remainders = exclude(base, excl, v);
+        const remainders = excludeNets(base, excl, v);
         if (base.toString() !== remainders.toString()) {
           bases[v] = bases[v].concat(remainders);
           bases[v].splice(index, 1);
@@ -333,17 +332,17 @@ cidrTools.exclude = function(basenets, exclnets) {
   return bases.v4.concat(bases.v6);
 };
 
-cidrTools.expand = function(nets) {
+module.exports.expand = (nets) => {
   nets = uniq(Array.isArray(nets) ? nets : [nets]);
 
   let ips = [];
-  for (const net of cidrTools.merge(nets)) {
+  for (const net of module.exports.merge(nets)) {
     ips = ips.concat((new IPCIDR(net)).toArray());
   }
-  return ips.map(cidrTools.normalize);
+  return ips.map(module.exports.normalize);
 };
 
-cidrTools.overlap = (a, b) => {
+module.exports.overlap = (a, b) => {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 
@@ -356,7 +355,7 @@ cidrTools.overlap = (a, b) => {
         continue;
       }
 
-      if (overlap(aParsed, bParsed)) {
+      if (doNetsOverlap(aParsed, bParsed)) {
         return true;
       }
     }
