@@ -35,7 +35,7 @@ function parse(str) {
 
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
-  if (number.constructor.name !== "BigInteger") number = bigint(number);
+  if (!(number instanceof BigInteger)) number = bigint(number);
   return cidrTools.normalize(cls.fromBigInteger(number).address);
 }
 
@@ -197,8 +197,8 @@ function subparts(part) {
 }
 
 function diff(a, b) {
-  if (a.constructor.name !== "BigInteger") a = bigint(a);
-  if (b.constructor.name !== "BigInteger") b = bigint(b);
+  if (!(a instanceof BigInteger)) a = bigint(a);
+  if (!(b instanceof BigInteger)) b = bigint(b);
   a = a.add(one);
   return a.subtract(b);
 }
