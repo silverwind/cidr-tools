@@ -113,10 +113,7 @@ function excludeNets(a, b, v) {
   // aaaa
   //   bb
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) <= 0) {
-    parts.push({
-      start: aStart,
-      end: bStart.subtract(one),
-    });
+    parts.push({start: aStart, end: bStart.subtract(one)});
   }
 
   //    aaa
@@ -124,23 +121,16 @@ function excludeNets(a, b, v) {
   //   aaaa
   //   bbb
   if (aStart.compareTo(bStart) >= 0 && aEnd.compareTo(bEnd) > 0) {
-    parts.push({
-      start: bEnd.add(one),
-      end: aEnd,
-    });
+    parts.push({start: bEnd.add(one), end: aEnd});
   }
 
   //  aaaa
   //   bb
   if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) > 0) {
-    parts.push({
-      start: aStart,
-      end: bStart.subtract(one),
-    });
-    parts.push({
-      start: bEnd.add(one),
-      end: aEnd,
-    });
+    parts.push(
+      {start: aStart, end: bStart.subtract(one)},
+      {start: bEnd.add(one), end: aEnd},
+    );
   }
 
   const remaining = [];
