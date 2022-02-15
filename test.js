@@ -1,6 +1,6 @@
 "use strict";
 
-const {merge, exclude, expand, overlap, normalize} = require(".");
+const {merge, exclude, expand, overlap, normalize, contains} = require(".");
 
 test("merge", () => {
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
@@ -56,4 +56,14 @@ test("normalize", () => {
   expect(normalize("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
   expect(normalize("1.2.3.4")).toEqual("1.2.3.4");
   expect(normalize("1.2.3.4/0")).toEqual("1.2.3.4/0");
+});
+
+test("contains", () => {
+  expect(contains("1.0.0.0/24", "1.0.0.1")).toEqual(true);
+  expect(contains("1.0.0.0/24", "1.0.1.1")).toEqual(false);
+  expect(contains("0.0.0.0/24", "::")).toEqual(false);
+  expect(contains("::/64", "::")).toEqual(true);
+  expect(contains("::/128", "::1")).toEqual(false);
+  expect(contains("::/128", "0.0.0.0")).toEqual(false);
+  expect(contains("::/128", "0.0.0.1")).toEqual(false);
 });

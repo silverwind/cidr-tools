@@ -61,11 +61,18 @@ function uniq(arr) {
   return [...new Set(arr)];
 }
 
-function doNetsOverlap(a, b) {
+// utility function that returns boundaries of two networks
+function getBoundaries(a, b) {
   const aStart = a.start({type: "bigInteger"});
   const bStart = b.start({type: "bigInteger"});
   const aEnd = a.end({type: "bigInteger"});
   const bEnd = b.end({type: "bigInteger"});
+  return {aStart, bStart, aEnd, bEnd};
+}
+
+// returns whether networks fully or partially overlap
+function doNetsOverlap(a, b) {
+  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
 
   //    aaa
   // bbb
@@ -78,12 +85,24 @@ function doNetsOverlap(a, b) {
   return true;
 }
 
+// returns whether network a fully contains network b;
+function contains(a, b) {
+  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
+
+  //  aaa
+  // bbbb
+  if (bStart.compareTo(aStart) < 0) return false; // a starts after b
+
+  // aaa
+  // bbbb
+  if (bEnd.compareTo(aEnd) > 0) return false; // b starts after a
+
+  return true;
+}
+
 // exclude b from a and return remainder cidrs
 function excludeNets(a, b, v) {
-  const aStart = a.start({type: "bigInteger"});
-  const bStart = b.start({type: "bigInteger"});
-  const aEnd = a.end({type: "bigInteger"});
-  const bEnd = b.end({type: "bigInteger"});
+  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
   const parts = [];
 
   // compareTo returns negative if left is less than right
@@ -341,6 +360,7 @@ module.exports.overlap = (a, b) => {
     for (const b of bNets) {
       const bParsed = parse(b);
 
+      // version mismatch
       if (aParsed.address.v4 !== bParsed.address.v4) {
         continue;
       }
@@ -352,4 +372,16 @@ module.exports.overlap = (a, b) => {
   }
 
   return false;
+};
+
+module.exports.contains = (a, b) => {
+  const aParsed = parse(a);
+  const bParsed = parse(b);
+
+  // version mismatch
+  if (aParsed.address.v4 !== bParsed.address.v4) {
+    return false;
+  }
+
+  return contains(aParsed, bParsed);
 };
