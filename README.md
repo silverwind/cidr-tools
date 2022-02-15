@@ -55,7 +55,7 @@ Returns a boolean that indicates if `networksA` overlap (intersect) with `networ
 - `networkA` *String*: A CIDR or IP address.
 - `networkB` *String*: A CIDR or IP address.
 
-Returns a boolean that indicates whether `networksA` fully contains `networksB`.
+Returns a boolean that indicates whether `networkA` fully contains `networkB`.
 
 ### cidrTools.normalize(network)
 
