@@ -1,39 +1,39 @@
-node_modules: yarn.lock
-	@yarn -s --pure-lockfile
+node_modules: package-lock.json
+	npm install --no-save
 	@touch node_modules
 
 deps: node_modules
 
 test: node_modules
-	yarn -s run eslint --color .
-	yarn -s run jest --color
+	npx eslint --color .
+	npx jest --color
 
 unittest: node_modules
-	yarn -s run jest --color --watchAll=true
+	npx jest --color --watchAll=true
 
 coverage: node_modules
-	yarn -s run jest --collectCoverage --coverageReporters text
+	npx jest --collectCoverage --coverageReporters text
 
 publish: node_modules
 	git push -u --tags origin master
 	npm publish
 
 update: node_modules
-	yarn -s run updates -cu
-	@rm yarn.lock
-	@yarn -s
+	npx updates -cu
+	rm package-lock.json
+	npm install
 	@touch node_modules
 
 patch: node_modules test
-	yarn -s run versions -C patch
+	npx versions -C patch
 	$(MAKE) --no-print-directory publish
 
 minor: node_modules test
-	yarn -s run versions -C minor
+	npx versions -C minor
 	$(MAKE) --no-print-directory publish
 
 major: node_modules test
-	yarn -s run versions -C major
+	npx versions -C major
 	$(MAKE) --no-print-directory publish
 
 .PHONY: deps test unittest coverage publish update patch minor major
