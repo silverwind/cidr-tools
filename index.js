@@ -375,13 +375,27 @@ module.exports.overlap = (a, b) => {
 };
 
 module.exports.contains = (a, b) => {
-  const aParsed = parse(a);
-  const bParsed = parse(b);
+  const aNets = uniq(Array.isArray(a) ? a : [a]);
+  const bNets = uniq(Array.isArray(b) ? b : [b]);
 
-  // version mismatch
-  if (aParsed.address.v4 !== bParsed.address.v4) {
-    return false;
+  const numExpected = bNets.length;
+  let numFound = 0;
+  for (const a of aNets) {
+    const aParsed = parse(a);
+    for (const b of bNets) {
+      const bParsed = parse(b);
+
+      // version mismatch
+      if (aParsed.address.v4 !== bParsed.address.v4) {
+        continue;
+      }
+
+      if (contains(aParsed, bParsed)) {
+        numFound++;
+        continue;
+      }
+    }
   }
 
-  return contains(aParsed, bParsed);
+  return numFound === numExpected;
 };
