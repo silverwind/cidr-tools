@@ -5,7 +5,7 @@ node_modules: package-lock.json
 deps: node_modules
 
 test: node_modules
-	npx eslint --color .
+	if [[ $$(node -v) != v10* ]]; then npx eslint --color .; fi
 	npx jest --color
 
 unittest: node_modules
