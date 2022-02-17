@@ -6,7 +6,7 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=12.17.0"
+    "node": ">=10"
   },
   "keywords": [
     "cidr",
