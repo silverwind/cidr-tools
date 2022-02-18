@@ -51,7 +51,7 @@ Returns an array of individual IPs contained in the networks.
 
 Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`.
 
-### cidrTools.contains(networkA, networkB)
+### cidrTools.contains(networksA, networksB)
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
