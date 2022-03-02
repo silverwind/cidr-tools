@@ -19,7 +19,7 @@ const zero = bigint("0");
 const one = bigint("1");
 const two = bigint("2");
 
-module.exports.normalize = (cidr) => {
+function doNormalize(cidr) {
   const cidrVersion = isCidr(cidr);
   if (cidrVersion === 4) {
     return cidr;
@@ -36,6 +36,10 @@ module.exports.normalize = (cidr) => {
   }
 
   throw new Error(`Invalid network: ${cidr}`);
+}
+
+module.exports.normalize = (cidr) => {
+  return Array.isArray(cidr) ? cidr.map(doNormalize) : doNormalize(cidr);
 };
 
 function parse(str) {

@@ -52,10 +52,16 @@ test("overlap", () => {
 });
 
 test("normalize", () => {
+  expect(normalize("::0")).toEqual("::");
   expect(normalize("0:0:0:0:0:0:0:0")).toEqual("::");
   expect(normalize("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
   expect(normalize("1.2.3.4")).toEqual("1.2.3.4");
   expect(normalize("1.2.3.4/0")).toEqual("1.2.3.4/0");
+
+  expect(normalize(["0:0:0:0:0:0:0:0"])).toEqual(["::"]);
+  expect(normalize(["0:0:0:0:0:0:0:0", "::0"])).toEqual(["::", "::"]);
+  expect(normalize(["1.2.3.4", "2.3.4.5"])).toEqual(["1.2.3.4", "2.3.4.5"]);
+  expect(normalize(["1.2.3.4/0"])).toEqual(["1.2.3.4/0"]);
 });
 
 test("contains", () => {

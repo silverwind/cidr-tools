@@ -4,7 +4,6 @@ type IPv6Address = string;
 type IPv6CIDR = string;
 
 type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
-
 type Networks = Network | Network[];
 
 interface CIDRTools {
@@ -12,7 +11,7 @@ interface CIDRTools {
   exclude(baseNetworks: Networks, excludeNetworks: Networks): Network[];
   expand(networks: Networks): Network[];
   overlap(networksA: Networks, networksB: Networks): boolean;
-  normalize(cidr: Network): Network;
+  normalize(cidr: Networks): Networks;
   contains(networksA: Networks, networksB: Networks): boolean;
 }
 
