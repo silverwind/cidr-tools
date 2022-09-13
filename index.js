@@ -12,6 +12,7 @@ const bits = {
 };
 
 const bigint = numberstring => new BigInteger(numberstring);
+const uniq = arr => [...new Set(arr)];
 
 const zero = bigint("0");
 const one = bigint("1");
@@ -71,10 +72,6 @@ function format(number, version) {
     number: BigInt(number.toString()),
     version: Number(version.substring(1)),
   }));
-}
-
-function uniq(arr) {
-  return [...new Set(arr)];
 }
 
 // utility function that returns boundaries of two networks
