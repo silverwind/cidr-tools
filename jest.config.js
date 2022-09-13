@@ -1,4 +1,5 @@
-module.exports = {
+export default {
   verbose: false,
-  testTimeout: 30000
+  testTimeout: 60000,
+  transform: {},
 };

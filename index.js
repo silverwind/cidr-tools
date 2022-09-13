@@ -1,12 +1,10 @@
-"use strict";
-
-const IPCIDR = require("ip-cidr");
-const isIp = require("is-ip");
-const isCidr = require("is-cidr");
-const ipv6Normalize = require("ipv6-normalize");
-const naturalCompare = require("string-natural-compare");
-const {Address4, Address6} = require("ip-address");
-const {BigInteger} = require("jsbn");
+import IPCIDR from "ip-cidr";
+import ipRegex from "ip-regex";
+import isCidr from "is-cidr";
+import ipv6Normalize from "ipv6-normalize";
+import naturalCompare from "string-natural-compare";
+import {Address4, Address6} from "@silverwind/ip-address"; // https://github.com/beaugunderson/ip-address/issues/153
+import {BigInteger} from "jsbn";
 
 const bits = {
   "v4": 32,
@@ -18,6 +16,12 @@ const bigint = numberstring => new BigInteger(numberstring);
 const zero = bigint("0");
 const one = bigint("1");
 const two = bigint("2");
+
+function isIP(ip) {
+  if (ipRegex.v4({exact: true}).test(ip)) return 4;
+  if (ipRegex.v6({exact: true}).test(ip)) return 6;
+  return 0;
+}
 
 function doNormalize(cidr) {
   const cidrVersion = isCidr(cidr);
@@ -43,17 +47,17 @@ function doNormalize(cidr) {
   throw new Error(`Invalid network: ${cidr}`);
 }
 
-module.exports.normalize = (cidr) => {
+export function normalize(cidr) {
   return Array.isArray(cidr) ? cidr.map(doNormalize) : doNormalize(cidr);
-};
+}
 
 function parse(str) {
   if (isCidr(str)) {
-    return new IPCIDR(module.exports.normalize(str));
+    return new IPCIDR(normalize(str));
   } else {
-    const version = isIp.version(str);
+    const version = isIP(str);
     if (version) {
-      return new IPCIDR(module.exports.normalize(`${str}/${bits[`v${version}`]}`));
+      return new IPCIDR(normalize(`${str}/${bits[`v${version}`]}`));
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
@@ -63,7 +67,7 @@ function parse(str) {
 function format(number, v) {
   const cls = v === "v6" ? Address6 : Address4;
   if (!(number instanceof BigInteger)) number = bigint(number);
-  return module.exports.normalize(cls.fromBigInteger(number).address);
+  return normalize(cls.fromBigInteger(number).address);
 }
 
 function uniq(arr) {
@@ -95,7 +99,7 @@ function doNetsOverlap(a, b) {
 }
 
 // returns whether network a fully contains network b;
-function contains(a, b) {
+function netContains(a, b) {
   const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
 
   //  aaa
@@ -168,7 +172,7 @@ function excludeNets(a, b, v) {
     }
   }
 
-  return module.exports.merge(remaining);
+  return merge(remaining);
 }
 
 function biggestPowerOfTwo(num) {
@@ -271,7 +275,7 @@ function mapNets(nets) {
   return maps;
 }
 
-module.exports.merge = function(nets) {
+export function merge(nets) {
   nets = uniq((Array.isArray(nets) ? nets : [nets]).map(parse));
   const maps = mapNets(nets);
 
@@ -313,14 +317,14 @@ module.exports.merge = function(nets) {
   merged.v4 = merged.v4.sort(naturalCompare);
   merged.v6 = merged.v6.sort(naturalCompare);
   return merged.v4.concat(merged.v6);
-};
+}
 
-module.exports.exclude = (basenets, exclnets) => {
+export function exclude(basenets, exclnets) {
   basenets = uniq(Array.isArray(basenets) ? basenets : [basenets]);
   exclnets = uniq(Array.isArray(exclnets) ? exclnets : [exclnets]);
 
-  basenets = module.exports.merge(basenets);
-  exclnets = module.exports.merge(exclnets);
+  basenets = merge(basenets);
+  exclnets = merge(exclnets);
 
   const bases = {v4: [], v6: []};
   const excls = {v4: [], v6: []};
@@ -348,19 +352,19 @@ module.exports.exclude = (basenets, exclnets) => {
   }
 
   return bases.v4.concat(bases.v6);
-};
+}
 
-module.exports.expand = (nets) => {
+export function expand(nets) {
   nets = uniq(Array.isArray(nets) ? nets : [nets]);
 
   let ips = [];
-  for (const net of module.exports.merge(nets)) {
+  for (const net of merge(nets)) {
     ips = ips.concat((new IPCIDR(net)).toArray());
   }
-  return ips.map(module.exports.normalize);
-};
+  return ips.map(normalize);
+}
 
-module.exports.overlap = (a, b) => {
+export function overlap(a, b) {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 
@@ -381,9 +385,9 @@ module.exports.overlap = (a, b) => {
   }
 
   return false;
-};
+}
 
-module.exports.contains = (a, b) => {
+export function contains(a, b) {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 
@@ -399,7 +403,7 @@ module.exports.contains = (a, b) => {
         continue;
       }
 
-      if (contains(aParsed, bParsed)) {
+      if (netContains(aParsed, bParsed)) {
         numFound++;
         continue;
       }
@@ -407,4 +411,4 @@ module.exports.contains = (a, b) => {
   }
 
   return numFound === numExpected;
-};
+}

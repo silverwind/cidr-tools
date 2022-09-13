@@ -1,6 +1,4 @@
-"use strict";
-
-const {merge, exclude, expand, overlap, normalize, contains} = require(".");
+import {merge, exclude, expand, overlap, normalize, contains} from "./index.js";
 
 test("merge", () => {
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
