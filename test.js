@@ -53,15 +53,18 @@ test("overlap", () => {
 
 test("normalize", () => {
   expect(normalize("::0")).toEqual("::");
+  expect(normalize("::FF")).toEqual("::ff");
+  expect(normalize("::FF/2")).toEqual("::/2");
   expect(normalize("0:0:0:0:0:0:0:0")).toEqual("::");
+  expect(normalize("0:0:0:0:0:FF:0:0")).toEqual("::ff:0:0");
+  expect(normalize("0:0:0:0:0:FF:0:0/16")).toEqual("::/16");
+  expect(normalize("FF:00:0:0:0:00:0:EE/16")).toEqual("ff::/16");
   expect(normalize("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
   expect(normalize("1.2.3.4")).toEqual("1.2.3.4");
-  expect(normalize("1.2.3.4/0")).toEqual("1.2.3.4/0");
-
+  expect(normalize("1.2.3.4/0")).toEqual("0.0.0.0/0");
+  expect(normalize("255.255.255.255/1")).toEqual("128.0.0.0/1");
+  expect(normalize("255.255.255.255/6")).toEqual("252.0.0.0/6");
   expect(normalize(["0:0:0:0:0:0:0:0"])).toEqual(["::"]);
-  expect(normalize(["0:0:0:0:0:0:0:0", "::0"])).toEqual(["::", "::"]);
-  expect(normalize(["1.2.3.4", "2.3.4.5"])).toEqual(["1.2.3.4", "2.3.4.5"]);
-  expect(normalize(["1.2.3.4/0"])).toEqual(["1.2.3.4/0"]);
 });
 
 test("contains", () => {

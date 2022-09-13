@@ -21,13 +21,18 @@ const two = bigint("2");
 
 function doNormalize(cidr) {
   const cidrVersion = isCidr(cidr);
-  if (cidrVersion === 4) {
-    return cidr;
-  } else if (cidrVersion === 6) {
-    const [ip, prefix] = cidr.split("/");
-    return `${ipv6Normalize(ip)}/${prefix}`;
+
+  // cidr
+  if (cidrVersion) {
+    // set network address to first address
+    let start = (new IPCIDR(cidr)).start();
+    if (cidrVersion === 6) start = ipv6Normalize(start).toString();
+    if (start) {
+      return `${start}${cidr.match(/\/.+/)}`.toLowerCase();
+    }
   }
 
+  // single ip
   const parsed = parse(cidr);
   if (parsed && parsed.address && parsed.address.v4) {
     return cidr;
