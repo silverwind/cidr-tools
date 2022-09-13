@@ -3,7 +3,7 @@ import ipRegex from "ip-regex";
 import isCidr from "is-cidr";
 import ipv6Normalize from "ipv6-normalize";
 import naturalCompare from "string-natural-compare";
-import {stringify as stringifyIp} from "ip-bigint";
+import {stringifyIp} from "ip-bigint";
 import {BigInteger} from "jsbn";
 
 const bits = {
