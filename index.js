@@ -3,7 +3,7 @@ import ipRegex from "ip-regex";
 import isCidr from "is-cidr";
 import ipv6Normalize from "ipv6-normalize";
 import naturalCompare from "string-natural-compare";
-import {Address4, Address6} from "@silverwind/ip-address"; // https://github.com/beaugunderson/ip-address/issues/153
+import {stringify as stringifyIp} from "ip-bigint";
 import {BigInteger} from "jsbn";
 
 const bits = {
@@ -64,10 +64,13 @@ function parse(str) {
   }
 }
 
-function format(number, v) {
-  const cls = v === "v6" ? Address6 : Address4;
+function format(number, version) {
   if (!(number instanceof BigInteger)) number = bigint(number);
-  return normalize(cls.fromBigInteger(number).address);
+
+  return normalize(stringifyIp({
+    number: BigInt(number.toString()),
+    version: Number(version.substring(1)),
+  }));
 }
 
 function uniq(arr) {
