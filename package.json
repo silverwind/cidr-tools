@@ -32,7 +32,7 @@
     "ip-cidr": "^3.0.10",
     "ip-regex": "5.0.0",
     "ipv6-normalize": "^1.0.1",
-    "is-cidr": "^4.0.2",
+    "is-cidr": "^5.0.0",
     "jsbn": "^1.1.0",
     "string-natural-compare": "^3.0.1"
   },
