@@ -59,15 +59,6 @@ function parse(str) {
   }
 }
 
-function format(number, version) {
-  if (!(number instanceof BigInt)) number = BigInt(number);
-
-  return normalize(stringifyIp({
-    number: BigInt(number.toString()),
-    version: Number(version.substring(1)),
-  }));
-}
-
 // utility function that returns boundaries of two networks
 function getBoundaries(a, b) {
   const aStart = BigInt(a.start({type: "bigInteger"}).toString());
@@ -237,7 +228,10 @@ function diff(a, b) {
 }
 
 function formatPart(part, v) {
-  const ip = format(part.start, v);
+  const ip = normalize(stringifyIp({
+    number: BigInt(part.start.toString()),
+    version: Number(v.substring(1)),
+  }));
   const zeroes = diff(part.end, part.start).toString(2);
   const prefix = bits[v] - (zeroes.match(/0/g) || []).length;
   return `${ip}/${prefix}`;
@@ -307,9 +301,7 @@ export function merge(nets) {
     }
   }
 
-  merged.v4 = merged.v4.sort(naturalCompare);
-  merged.v6 = merged.v6.sort(naturalCompare);
-  return merged.v4.concat(merged.v6);
+  return [...merged.v4.sort(naturalCompare), ...merged.v6.sort(naturalCompare)];
 }
 
 export function exclude(basenets, exclnets) {
