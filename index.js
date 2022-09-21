@@ -1,4 +1,3 @@
-import IPCIDR from "ip-cidr";
 import ipRegex from "ip-regex";
 import isCidr from "is-cidr";
 import naturalCompare from "string-natural-compare";
@@ -330,9 +329,12 @@ export function exclude(basenets, exclnets) {
 export function expand(nets) {
   nets = uniq(Array.isArray(nets) ? nets : [nets]);
 
-  let ips = [];
+  const ips = [];
   for (const net of merge(nets)) {
-    ips = ips.concat((new IPCIDR(net)).toArray());
+    const {start, end, version} = parse(net);
+    for (let number = start; number <= end; number++) {
+      ips.push(stringifyIp({number, version}));
+    }
   }
   return ips.map(normalize);
 }
