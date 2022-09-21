@@ -25,6 +25,8 @@ normalize('::ffff/64') //=> '::/64'
 
 All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
 
+This module requires [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility) support in your environment.
+
 ### merge(networks)
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
