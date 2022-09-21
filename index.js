@@ -19,27 +19,15 @@ function isIP(ip) {
 }
 
 function doNormalize(cidr) {
-  const cidrVersion = isCidr(cidr);
-
-  // cidr
-  if (cidrVersion) {
+  const {start, prefix, single, version} = parse(cidr);
+  if (!single) { // cidr
     // set network address to first address
-    let start = (new IPCIDR(cidr)).start();
-    if (cidrVersion === 6) start = normalizeIp(start);
-    if (start) {
-      return `${start}${cidr.match(/\/.+/)}`.toLowerCase();
-    }
-  }
-
-  // single ip
-  const parsed = parse(cidr);
-  if (parsed?.address?.v4) {
-    return cidr;
-  } else if (parsed?.address?.v4 === false) {
+    const addr = normalizeIp(stringifyIp({number: start, version}));
+    return `${addr}/${prefix}`;
+  } else { // single ip
+    if (!version) throw new Error(`Invalid network: ${cidr}`);
     return normalizeIp(cidr);
   }
-
-  throw new Error(`Invalid network: ${cidr}`);
 }
 
 export function normalize(cidr) {
@@ -47,60 +35,62 @@ export function normalize(cidr) {
 }
 
 function parse(str) {
-  if (isCidr(str)) {
-    return new IPCIDR(str);
+  const cidrVersion = isCidr(str);
+  const parsed = Object.create(null);
+  if (cidrVersion) {
+    parsed.cidr = str;
+    parsed.version = cidrVersion;
   } else {
     const version = isIP(str);
     if (version) {
-      return new IPCIDR(`${str}/${bits[`v${version}`]}`);
+      parsed.cidr = `${str}/${bits[`v${version}`]}`;
+      parsed.version = version;
+      parsed.single = true;
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
   }
-}
 
-// utility function that returns boundaries of two networks
-function getBoundaries(a, b) {
-  const aStart = BigInt(a.start({type: "bigInteger"}).toString());
-  const bStart = BigInt(b.start({type: "bigInteger"}).toString());
-  const aEnd = BigInt(a.end({type: "bigInteger"}).toString());
-  const bEnd = BigInt(b.end({type: "bigInteger"}).toString());
-  return {aStart, bStart, aEnd, bEnd};
+  const [ip, prefix] = parsed.cidr.split("/");
+  parsed.prefix = prefix;
+  const {number, version} = parseIp(ip);
+  const numBits = bits[`v${version}`];
+  const ipBits = number.toString(2).padStart(numBits, "0");
+  const prefixLen = Number(numBits - prefix);
+  const startBits = ipBits.substring(0, numBits - prefixLen);
+  parsed.start = BigInt(`0b${startBits}${"0".repeat(prefixLen)}`);
+  parsed.end = BigInt(`0b${startBits}${"1".repeat(prefixLen)}`);
+  return parsed;
 }
 
 // returns whether networks fully or partially overlap
 function doNetsOverlap(a, b) {
-  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
-
   //    aaa
   // bbb
-  if (aStart > bEnd) return false; // a starts after b
+  if (a.start > b.end) return false; // a starts after b
 
   // aaa
   //    bbb
-  if (bStart > aEnd) return false; // b starts after a
+  if (b.start > a.end) return false; // b starts after a
 
   return true;
 }
 
 // returns whether network a fully contains network b;
 function netContains(a, b) {
-  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
-
   //  aaa
   // bbbb
-  if (bStart < aStart) return false; // a starts after b
+  if (b.start < a.start) return false; // a starts after b
 
   // aaa
   // bbbb
-  if (bEnd > aEnd) return false; // b starts after a
+  if (b.end > a.end) return false; // b starts after a
 
   return true;
 }
 
 // exclude b from a and return remainder cidrs
 function excludeNets(a, b, v) {
-  const {aStart, bStart, aEnd, bEnd} = getBoundaries(a, b);
   const parts = [];
 
   // compareTo returns negative if left is less than right
@@ -109,19 +99,19 @@ function excludeNets(a, b, v) {
   //   bbb
   //   aaa
   //       bbb
-  if (aStart > bEnd || aEnd < bStart) {
+  if (a.start > b.end || a.end < b.start) {
     return [a.cidr];
   }
 
   //   aaa
   //   bbb
-  if (aStart === bStart && aEnd === bEnd) {
+  if (a.start === b.start && a.end === b.end) {
     return [];
   }
 
   //   aa
   //  bbbb
-  if (aStart > bStart && aEnd < bEnd) {
+  if (a.start > b.start && a.end < b.end) {
     return [];
   }
 
@@ -129,24 +119,24 @@ function excludeNets(a, b, v) {
   //   bbbb
   // aaaa
   //   bb
-  if (aStart < bStart && aEnd <= bEnd) {
-    parts.push({start: aStart, end: bStart - 1n});
+  if (a.start < b.start && a.end <= b.end) {
+    parts.push({start: a.start, end: b.start - 1n});
   }
 
   //    aaa
   //   bbb
   //   aaaa
   //   bbb
-  if (aStart >= bStart && aEnd > bEnd) {
-    parts.push({start: bEnd + 1n, end: aEnd});
+  if (a.start >= b.start && a.end > b.end) {
+    parts.push({start: b.end + 1n, end: a.end});
   }
 
   //  aaaa
   //   bb
-  if (aStart < bStart && aEnd > bEnd) {
+  if (a.start < b.start && a.end > b.end) {
     parts.push(
-      {start: aStart, end: bStart - 1n},
-      {start: bEnd + 1n, end: aEnd},
+      {start: a.start, end: b.start - 1n},
+      {start: b.end + 1n, end: a.end},
     );
   }
 
@@ -239,10 +229,8 @@ function formatPart(part, v) {
 
 function mapNets(nets) {
   const maps = {v4: {}, v6: {}};
-  for (const net of nets) {
-    const start = BigInt(net.start({type: "bigInteger"}).toString());
-    const end = BigInt(net.end({type: "bigInteger"}).toString());
-    const v = `v${isCidr(net)}`;
+  for (const {start, end, version} of nets) {
+    const v = `v${version}`;
 
     if (!maps[v][start]) maps[v][start] = {};
     if (!maps[v][end]) maps[v][end] = {};
@@ -328,7 +316,7 @@ export function exclude(basenets, exclnets) {
         const base = parse(basecidr);
         const excl = parse(exclcidr);
         const remainders = excludeNets(base, excl, v);
-        if (base.toString() !== remainders.toString()) {
+        if (base.cidr !== remainders.toString()) {
           bases[v] = bases[v].concat(remainders);
           bases[v].splice(index, 1);
         }
@@ -359,7 +347,7 @@ export function overlap(a, b) {
       const bParsed = parse(b);
 
       // version mismatch
-      if (aParsed.address.v4 !== bParsed.address.v4) {
+      if (aParsed.version !== bParsed.version) {
         continue;
       }
 
@@ -384,7 +372,7 @@ export function contains(a, b) {
       const bParsed = parse(b);
 
       // version mismatch
-      if (aParsed.address.v4 !== bParsed.address.v4) {
+      if (aParsed.version !== bParsed.version) {
         continue;
       }
 
