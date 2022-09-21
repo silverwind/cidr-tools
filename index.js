@@ -48,11 +48,11 @@ export function normalize(cidr) {
 
 function parse(str) {
   if (isCidr(str)) {
-    return new IPCIDR(normalize(str));
+    return new IPCIDR(str);
   } else {
     const version = isIP(str);
     if (version) {
-      return new IPCIDR(normalize(`${str}/${bits[`v${version}`]}`));
+      return new IPCIDR(`${str}/${bits[`v${version}`]}`);
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
