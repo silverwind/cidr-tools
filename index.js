@@ -3,20 +3,14 @@ import ipRegex from "ip-regex";
 import isCidr from "is-cidr";
 import naturalCompare from "string-natural-compare";
 import {parseIp, stringifyIp} from "ip-bigint";
-import {BigInteger} from "jsbn";
 
 const bits = {
   "v4": 32,
   "v6": 128,
 };
 
-const bigint = numberstring => new BigInteger(numberstring);
 const normalizeIp = str => stringifyIp(parseIp(str));
 const uniq = arr => [...new Set(arr)];
-
-const zero = bigint("0");
-const one = bigint("1");
-const two = bigint("2");
 
 function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
@@ -66,7 +60,7 @@ function parse(str) {
 }
 
 function format(number, version) {
-  if (!(number instanceof BigInteger)) number = bigint(number);
+  if (!(number instanceof BigInt)) number = BigInt(number);
 
   return normalize(stringifyIp({
     number: BigInt(number.toString()),
@@ -76,10 +70,10 @@ function format(number, version) {
 
 // utility function that returns boundaries of two networks
 function getBoundaries(a, b) {
-  const aStart = a.start({type: "bigInteger"});
-  const bStart = b.start({type: "bigInteger"});
-  const aEnd = a.end({type: "bigInteger"});
-  const bEnd = b.end({type: "bigInteger"});
+  const aStart = BigInt(a.start({type: "bigInteger"}).toString());
+  const bStart = BigInt(b.start({type: "bigInteger"}).toString());
+  const aEnd = BigInt(a.end({type: "bigInteger"}).toString());
+  const bEnd = BigInt(b.end({type: "bigInteger"}).toString());
   return {aStart, bStart, aEnd, bEnd};
 }
 
@@ -89,11 +83,11 @@ function doNetsOverlap(a, b) {
 
   //    aaa
   // bbb
-  if (aStart.compareTo(bEnd) > 0) return false; // a starts after b
+  if (aStart > bEnd) return false; // a starts after b
 
   // aaa
   //    bbb
-  if (bStart.compareTo(aEnd) > 0) return false; // b starts after a
+  if (bStart > aEnd) return false; // b starts after a
 
   return true;
 }
@@ -104,11 +98,11 @@ function netContains(a, b) {
 
   //  aaa
   // bbbb
-  if (bStart.compareTo(aStart) < 0) return false; // a starts after b
+  if (bStart < aStart) return false; // a starts after b
 
   // aaa
   // bbbb
-  if (bEnd.compareTo(aEnd) > 0) return false; // b starts after a
+  if (bEnd > aEnd) return false; // b starts after a
 
   return true;
 }
@@ -124,19 +118,19 @@ function excludeNets(a, b, v) {
   //   bbb
   //   aaa
   //       bbb
-  if (aStart.compareTo(bEnd) > 0 || aEnd.compareTo(bStart) < 0) {
+  if (aStart > bEnd || aEnd < bStart) {
     return [a.cidr];
   }
 
   //   aaa
   //   bbb
-  if (aStart.compareTo(bStart) === 0 && aEnd.compareTo(bEnd) === 0) {
+  if (aStart === bStart && aEnd === bEnd) {
     return [];
   }
 
   //   aa
   //  bbbb
-  if (aStart.compareTo(bStart) > 0 && aEnd.compareTo(bEnd) < 0) {
+  if (aStart > bStart && aEnd < bEnd) {
     return [];
   }
 
@@ -144,24 +138,24 @@ function excludeNets(a, b, v) {
   //   bbbb
   // aaaa
   //   bb
-  if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) <= 0) {
-    parts.push({start: aStart, end: bStart.subtract(one)});
+  if (aStart < bStart && aEnd <= bEnd) {
+    parts.push({start: aStart, end: bStart - 1n});
   }
 
   //    aaa
   //   bbb
   //   aaaa
   //   bbb
-  if (aStart.compareTo(bStart) >= 0 && aEnd.compareTo(bEnd) > 0) {
-    parts.push({start: bEnd.add(one), end: aEnd});
+  if (aStart >= bStart && aEnd > bEnd) {
+    parts.push({start: bEnd + 1n, end: aEnd});
   }
 
   //  aaaa
   //   bb
-  if (aStart.compareTo(bStart) < 0 && aEnd.compareTo(bEnd) > 0) {
+  if (aStart < bStart && aEnd > bEnd) {
     parts.push(
-      {start: aStart, end: bStart.subtract(one)},
-      {start: bEnd.add(one), end: aEnd},
+      {start: aStart, end: bStart - 1n},
+      {start: bEnd + 1n, end: aEnd},
     );
   }
 
@@ -176,15 +170,14 @@ function excludeNets(a, b, v) {
 }
 
 function biggestPowerOfTwo(num) {
-  if (num.compareTo(zero) === 0) return zero;
-  const power = bigint(String(num.toString(2).length - 1));
-  return two.pow(power);
+  if (num === 0n) return 0n;
+  return 2n ** BigInt(String(num.toString(2).length - 1));
 }
 
 function subparts(part) {
   // special case for when part is length 1
-  if (part.end.subtract(part.start).compareTo(one) === 0) {
-    if (part.end.remainder(two).equals(zero)) {
+  if ((part.end - part.start) === 1n) {
+    if (part.end % 2n === 0n) {
       return [{start: part.start, end: part.start}, {start: part.end, end: part.end}];
     } else {
       return [{start: part.start, end: part.end}];
@@ -195,52 +188,52 @@ function subparts(part) {
   let biggest = biggestPowerOfTwo(size);
 
   let start, end;
-  if (size.equals(biggest) && part.start.add(size).compareTo(part.end) === 0) {
+  if (size === biggest && part.start + size === part.end) {
     return [part];
-  } else if (part.start.remainder(biggest).equals(zero)) {
+  } else if (part.start % biggest === 0n) {
     // start is matching on the size-defined boundary - ex: 0-12, use 0-8
     start = part.start;
-    end = start.add(biggest).subtract(one);
+    end = start + biggest - 1n;
   } else {
-    start = part.end.divide(biggest).multiply(biggest);
+    start = (part.end / biggest) * biggest;
 
     // start is not matching on the size-defined boundary - 4-16, use 8-16
-    if (start.add(biggest).subtract(one).compareTo(part.end) > 0) {
+    if ((start + biggest - 1n) > part.end) {
       // divide will floor to nearest integer
-      start = part.end.divide(biggest).subtract(one).multiply(biggest);
+      start = ((part.end / biggest) - 1n) * biggest;
 
-      while (start.compareTo(part.start) < 0) {
-        biggest = biggest.divide(two);
-        start = part.end.divide(biggest).subtract(one).multiply(biggest);
+      while (start < part.start) {
+        biggest /= 2n;
+        start = ((part.end / biggest) - 1n) * biggest;
       }
 
-      end = start.add(biggest).subtract(one);
+      end = start + biggest - 1n;
     } else {
-      start = part.end.divide(biggest).multiply(biggest);
-      end = start.add(biggest).subtract(one);
+      start = (part.end / biggest) * biggest;
+      end = start + biggest - 1n;
     }
   }
 
   let parts = [{start, end}];
 
   // additional subnets on left side
-  if (!start.equals(part.start)) {
-    parts = parts.concat(subparts({start: part.start, end: start.subtract(one)}));
+  if (start !== part.start) {
+    parts = parts.concat(subparts({start: part.start, end: start - 1n}));
   }
 
   // additional subnets on right side
-  if (!end.equals(part.end)) {
-    parts = parts.concat(subparts({start: end.add(one), end: part.end}));
+  if (end !== part.end) {
+    parts = parts.concat(subparts({start: end + 1n, end: part.end}));
   }
 
   return parts;
 }
 
 function diff(a, b) {
-  if (!(a instanceof BigInteger)) a = bigint(a);
-  if (!(b instanceof BigInteger)) b = bigint(b);
-  a = a.add(one);
-  return a.subtract(b);
+  if (typeof a !== "bigint") a = BigInt(a);
+  if (typeof b !== "bigint") b = BigInt(b);
+  a += 1n;
+  return a - b;
 }
 
 function formatPart(part, v) {
@@ -253,8 +246,8 @@ function formatPart(part, v) {
 function mapNets(nets) {
   const maps = {v4: {}, v6: {}};
   for (const net of nets) {
-    const start = net.start({type: "bigInteger"}).toString();
-    const end = net.end({type: "bigInteger"}).toString();
+    const start = BigInt(net.start({type: "bigInteger"}).toString());
+    const end = BigInt(net.end({type: "bigInteger"}).toString());
     const v = `v${isCidr(net)}`;
 
     if (!maps[v][start]) maps[v][start] = {};
@@ -290,11 +283,11 @@ export function merge(nets) {
     for (const [index, number] of numbers.entries()) {
       const marker = maps[v][number];
 
-      if (!start[v] && marker.start) {
-        start[v] = bigint(number);
+      if (start[v] === null && marker.start) {
+        start[v] = BigInt(number);
       }
       if (marker.end) {
-        end[v] = bigint(number);
+        end[v] = BigInt(number);
       }
 
       if (marker.start) depth += marker.start;
