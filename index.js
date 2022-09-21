@@ -1,9 +1,8 @@
 import IPCIDR from "ip-cidr";
 import ipRegex from "ip-regex";
 import isCidr from "is-cidr";
-import ipv6Normalize from "ipv6-normalize";
 import naturalCompare from "string-natural-compare";
-import {stringifyIp} from "ip-bigint";
+import {parseIp, stringifyIp} from "ip-bigint";
 import {BigInteger} from "jsbn";
 
 const bits = {
@@ -12,6 +11,7 @@ const bits = {
 };
 
 const bigint = numberstring => new BigInteger(numberstring);
+const normalizeIp = str => stringifyIp(parseIp(str));
 const uniq = arr => [...new Set(arr)];
 
 const zero = bigint("0");
@@ -31,7 +31,7 @@ function doNormalize(cidr) {
   if (cidrVersion) {
     // set network address to first address
     let start = (new IPCIDR(cidr)).start();
-    if (cidrVersion === 6) start = ipv6Normalize(start).toString();
+    if (cidrVersion === 6) start = normalizeIp(start);
     if (start) {
       return `${start}${cidr.match(/\/.+/)}`.toLowerCase();
     }
@@ -42,7 +42,7 @@ function doNormalize(cidr) {
   if (parsed?.address?.v4) {
     return cidr;
   } else if (parsed?.address?.v4 === false) {
-    return ipv6Normalize(cidr);
+    return normalizeIp(cidr);
   }
 
   throw new Error(`Invalid network: ${cidr}`);
