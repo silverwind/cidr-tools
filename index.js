@@ -39,9 +39,9 @@ function doNormalize(cidr) {
 
   // single ip
   const parsed = parse(cidr);
-  if (parsed && parsed.address && parsed.address.v4) {
+  if (parsed?.address?.v4) {
     return cidr;
-  } else if (parsed && parsed.address && parsed.address.v4 === false) {
+  } else if (parsed?.address?.v4 === false) {
     return ipv6Normalize(cidr);
   }
 
