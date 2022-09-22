@@ -1,5 +1,5 @@
 import ipRegex from "ip-regex";
-import isCidr from "is-cidr";
+import cidrRegex from "cidr-regex";
 import naturalCompare from "string-natural-compare";
 import {parseIp, stringifyIp} from "ip-bigint";
 
@@ -14,6 +14,12 @@ const uniq = arr => [...new Set(arr)];
 function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
   if (ipRegex.v6({exact: true}).test(ip)) return 6;
+  return 0;
+}
+
+function isCidr(ip) {
+  if (cidrRegex.v4({exact: true}).test(ip)) return 4;
+  if (cidrRegex.v6({exact: true}).test(ip)) return 6;
   return 0;
 }
 

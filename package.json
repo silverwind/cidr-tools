@@ -29,9 +29,9 @@
   ],
   "types": "./index.d.ts",
   "dependencies": {
+    "cidr-regex": "4.0.2",
     "ip-bigint": "5.0.3",
     "ip-regex": "5.0.0",
-    "is-cidr": "5.0.2",
     "string-natural-compare": "3.0.1"
   },
   "devDependencies": {
