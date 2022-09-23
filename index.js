@@ -30,7 +30,6 @@ function doNormalize(cidr) {
     const addr = normalizeIp(stringifyIp({number: start, version}));
     return `${addr}/${prefix}`;
   } else { // single ip
-    if (!version) throw new Error(`Invalid network: ${cidr}`);
     return normalizeIp(cidr);
   }
 }
