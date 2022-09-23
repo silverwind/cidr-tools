@@ -27,8 +27,7 @@ function doNormalize(cidr) {
   const {start, prefix, single, version} = parse(cidr);
   if (!single) { // cidr
     // set network address to first address
-    const addr = normalizeIp(stringifyIp({number: start, version}));
-    return `${addr}/${prefix}`;
+    return `${normalizeIp(stringifyIp({number: start, version}))}/${prefix}`;
   } else { // single ip
     return normalizeIp(cidr);
   }
