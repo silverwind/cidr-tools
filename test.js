@@ -66,13 +66,28 @@ test("normalize", () => {
 });
 
 test("contains", () => {
+  expect(contains("1.0.0.0", "1.0.0.0")).toEqual(true);
+  expect(contains("1.0.0.0", "1.0.0.1")).toEqual(false);
+  expect(contains("1.0.0.0", "1.0.0.1/24")).toEqual(false);
+  expect(contains("1.0.0.0/24", "1.0.0.1/24")).toEqual(true);
+  expect(contains("1.0.0.0/24", "1.0.0.1")).toEqual(true);
   expect(contains("1.0.0.0/24", "1.0.0.1")).toEqual(true);
   expect(contains("1.0.0.0/24", "1.0.1.1")).toEqual(false);
   expect(contains("0.0.0.0/24", "::")).toEqual(false);
+  expect(contains("0.0.0.0/0", "::")).toEqual(false);
+  expect(contains("0.0.0.0/0", "::1")).toEqual(false);
+  expect(contains("0.0.0.0/0", "0.0.0.0/0")).toEqual(true);
   expect(contains("::/64", "::")).toEqual(true);
+  expect(contains("::/64", "::/64")).toEqual(true);
+  expect(contains("::/64", "::/96")).toEqual(true);
+  expect(contains("::/96", "::/64")).toEqual(false);
   expect(contains("::/128", "::1")).toEqual(false);
+  expect(contains("::/128", "::")).toEqual(true);
+  expect(contains("::/128", "::/128")).toEqual(true);
+  expect(contains("::/120", "::/128")).toEqual(true);
   expect(contains("::/128", "0.0.0.0")).toEqual(false);
   expect(contains("::/128", "0.0.0.1")).toEqual(false);
+  expect(contains(["::/128"], ["::/128"])).toEqual(true);
   expect(contains(["1.0.0.0/24"], ["1.0.0.1"])).toEqual(true);
   expect(contains("1.0.0.0/24", ["1.0.0.1"])).toEqual(true);
   expect(contains(["1.0.0.0/24"], "1.0.0.1")).toEqual(true);
