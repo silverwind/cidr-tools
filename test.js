@@ -1,5 +1,16 @@
 import {merge, exclude, expand, overlap, normalize, contains} from "./index.js";
 
+const privates = [
+  "10.0.0.0/8",
+  "100.64.0.0/10",
+  "127.0.0.1/8",
+  "172.16.0.0/12",
+  "192.168.0.0/16",
+  "::1/128",
+  "fc00::/7",
+  "fe80::/64",
+];
+
 test("merge", () => {
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
   expect(merge(["1.0.0.0/24", "1.0.1.0/24"])).toEqual(["1.0.0.0/23"]);
@@ -100,4 +111,17 @@ test("contains", () => {
   expect(contains(["1.0.0.0/24", "::/0", "3.0.0.0/24"], ["::1", "::2"])).toEqual(true);
   expect(contains(["1.0.0.0/24", "::/128", "3.0.0.0/24"], "::1")).toEqual(false);
   expect(contains(["1.0.0.0/24", "::/128", "3.0.0.0/24"], ["::1", "::2"])).toEqual(false);
+
+  expect(contains(privates, "127.0.0.1")).toEqual(true);
+  expect(contains(privates, "127.255.255.255")).toEqual(true);
+  expect(contains(privates, "100.64.0.0/24")).toEqual(true);
+  expect(contains(privates, "::1")).toEqual(true);
+  expect(contains(privates, "::2")).toEqual(false);
+  expect(contains(privates, "fe80::1")).toEqual(true);
+  expect(contains(privates, ["127.0.0.1", "::1"])).toEqual(true);
+  expect(contains(privates, ["127.0.0.1", "::1/64"])).toEqual(false);
+  expect(contains(privates, ["127.0.0.1", "::2"])).toEqual(false);
+  expect(contains(privates, ["128.0.0.0", "::1"])).toEqual(false);
+  expect(contains(privates, ["127.0.0.1", "fc00::"])).toEqual(true);
+  expect(contains(privates, ["127.0.0.1", "192.168.255.255", "fe80::2"])).toEqual(true);
 });
