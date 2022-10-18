@@ -11,18 +11,6 @@
   "engines": {
     "node": ">=14"
   },
-  "keywords": [
-    "cidr",
-    "ip",
-    "network",
-    "cidr-tools",
-    "address",
-    "ipv4",
-    "ipv6",
-    "merge",
-    "exclude",
-    "expand"
-  ],
   "files": [
     "index.js",
     "index.d.ts"
@@ -37,8 +25,20 @@
   "devDependencies": {
     "eslint": "8.24.0",
     "eslint-config-silverwind": "55.0.1",
-    "jest": "29.0.3",
     "updates": "13.1.8",
-    "versions": "9.3.3"
-  }
+    "versions": "9.3.3",
+    "vitest": "0.24.3"
+  },
+  "keywords": [
+    "cidr",
+    "ip",
+    "network",
+    "cidr-tools",
+    "address",
+    "ipv4",
+    "ipv6",
+    "merge",
+    "exclude",
+    "expand"
+  ]
 }
