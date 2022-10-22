@@ -27,15 +27,15 @@ update: node_modules
 
 .PHONY: path
 patch: node_modules test
-	npx versions -C patch
+	npx versions patch package.json package-lock.json
 	$(MAKE) --no-print-directory publish
 
 .PHONY: minor
 minor: node_modules test
-	npx versions -C minor
+	npx versions minor package.json package-lock.json
 	$(MAKE) --no-print-directory publish
 
 .PHONY: major
 major: node_modules test
-	npx versions -C major
+	npx versions major package.json package-lock.json
 	$(MAKE) --no-print-directory publish

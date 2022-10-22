@@ -23,10 +23,10 @@
     "string-natural-compare": "3.0.1"
   },
   "devDependencies": {
-    "eslint": "8.25.0",
-    "eslint-config-silverwind": "59.0.0",
-    "updates": "13.1.9",
-    "versions": "9.3.4",
+    "eslint": "8.26.0",
+    "eslint-config-silverwind": "59.0.1",
+    "updates": "13.1.10",
+    "versions": "10.0.4",
     "vitest": "0.24.3"
   },
   "keywords": [
