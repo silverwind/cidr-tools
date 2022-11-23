@@ -63,6 +63,12 @@ test("normalize", () => {
   expect(normalize("255.255.255.255/1")).toEqual("128.0.0.0/1");
   expect(normalize("255.255.255.255/6")).toEqual("252.0.0.0/6");
   expect(normalize(["0:0:0:0:0:0:0:0"])).toEqual(["::"]);
+  expect(normalize("::0001")).toEqual("::1");
+  expect(normalize("::FFFF:34.90.242.162")).toEqual("::ffff:34.90.242.162");
+
+  // these would be nice
+  // expect(normalize("01.02.03.04")).toEqual("1.2.3.4");
+  // expect(normalize("::FFFF:34.90.242.162")).toEqual("::ffff:225a:f2a2");
 });
 
 test("contains", () => {
