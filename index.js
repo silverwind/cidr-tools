@@ -145,7 +145,7 @@ function excludeNets(a, b, v) {
 
   const remaining = [];
   for (const part of parts) {
-    for (const subpart of subparts(part, v)) {
+    for (const subpart of subparts(part)) {
       remaining.push(formatPart(subpart, v));
     }
   }
