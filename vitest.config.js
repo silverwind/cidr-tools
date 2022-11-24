@@ -10,5 +10,7 @@ export default defineConfig({
     passWithNoTests: true,
     globals: true,
     watch: false,
+    outputDiffLines: Infinity,
+    outputTruncateLength: Infinity,
   },
 });
