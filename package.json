@@ -7,6 +7,7 @@
   "license": "BSD-2-Clause",
   "type": "module",
   "exports": "./index.js",
+  "main": "./index.js",
   "types": "./index.d.ts",
   "sideEffects": false,
   "engines": {
