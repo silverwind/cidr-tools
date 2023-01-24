@@ -11,6 +11,8 @@ export default defineConfig({
     globals: true,
     watch: false,
     outputDiffLines: Infinity,
+    outputDiffMaxLines: Infinity,
+    outputDiffMaxSize: Infinity,
     outputTruncateLength: Infinity,
   },
 });
