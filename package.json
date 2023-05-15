@@ -1,6 +1,6 @@
 {
   "name": "cidr-tools",
-  "version": "5.1.4",
+  "version": "5.1.5",
   "author": "silverwind <me@silverwind.io>",
   "description": "Tools to work with IPv4 and IPv6 CIDR network lists",
   "repository": "silverwind/cidr-tools",
