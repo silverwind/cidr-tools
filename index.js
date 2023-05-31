@@ -9,7 +9,7 @@ const bits = {
 };
 
 const normalizeIp = str => stringifyIp(parseIp(str));
-const uniq = arr => [...new Set(arr)];
+const uniq = arr => Array.from(new Set(arr));
 
 function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
