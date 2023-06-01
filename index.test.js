@@ -70,10 +70,6 @@ test("normalize", () => {
   expect(normalize(["1::1"], {compress: false})).toEqual(["1:0:0:0:0:0:0:1"]);
   expect(normalize(["1::/64"], {compress: false})).toEqual(["1:0:0:0:0:0:0:0/64"]);
   expect(normalize(["1.2.3.4/0"], {compress: false})).toEqual(["0.0.0.0/0"]);
-
-  // these would be nice
-  // expect(normalize("01.02.03.04")).toEqual("1.2.3.4");
-  // expect(normalize("::FFFF:34.90.242.162")).toEqual("::ffff:225a:f2a2");
 });
 
 test("contains", () => {
