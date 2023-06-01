@@ -68,5 +68,6 @@ Returns a string or array (depending on input) with a normalized representation.
 
 `opts`: Options `Object`
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
+  - `hexify`: Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.

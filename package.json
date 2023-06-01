@@ -19,7 +19,7 @@
   ],
   "dependencies": {
     "cidr-regex": "4.0.3",
-    "ip-bigint": "7.1.0",
+    "ip-bigint": "7.2.0",
     "ip-regex": "5.0.0",
     "string-natural-compare": "3.0.1"
   },
