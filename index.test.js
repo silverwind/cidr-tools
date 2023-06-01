@@ -71,7 +71,9 @@ test("normalize", () => {
   expect(normalize(["1::/64"], {compress: false})).toEqual(["1:0:0:0:0:0:0:0/64"]);
   expect(normalize(["1.2.3.4/0"], {compress: false})).toEqual(["0.0.0.0/0"]);
   expect(normalize("::FFFF:34.90.242.162", {hexify: true})).toEqual("::ffff:225a:f2a2");
+  expect(normalize("::FFFF:34.90.242.162/64", {hexify: true})).toEqual("::/64");
   expect(normalize(["::FFFF:34.90.242.162"], {hexify: true})).toEqual(["::ffff:225a:f2a2"]);
+  expect(normalize(["::FFFF:34.90.242.162/32"], {hexify: true})).toEqual(["::/32"]);
 });
 
 test("contains", () => {
