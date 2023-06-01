@@ -60,10 +60,13 @@ Returns a boolean that indicates if `networksA` overlap (intersect) with `networ
 
 Returns a boolean that indicates whether `networksA` fully contain all `networksB`.
 
-### normalize(networks)
+### normalize(networks, [opts])
 
 - `networks` *String* or *Array*: One or more CIDR or IP address.
 
-Returns a string or array (depending on input) with a normalized representation of IPs or CIDRs. Will not include a prefix on single IPs.
+Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs.
+
+`opts`: Options `Object`
+  - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.

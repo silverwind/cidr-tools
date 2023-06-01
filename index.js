@@ -22,18 +22,22 @@ function isCidr(ip) {
   return 0;
 }
 
-function doNormalize(cidr) {
+function doNormalize(cidr, {compress = true} = {}) {
   const {start, prefix, single, version} = parse(cidr);
   if (!single) { // cidr
     // set network address to first address
-    return `${normalizeIp(stringifyIp({number: start, version}))}/${prefix}`;
+    return `${normalizeIp(stringifyIp({number: start, version}), {compress})}/${prefix}`;
   } else { // single ip
-    return normalizeIp(cidr);
+    return normalizeIp(cidr, {compress});
   }
 }
 
-export function normalize(cidr) {
-  return Array.isArray(cidr) ? cidr.map(doNormalize) : doNormalize(cidr);
+export function normalize(cidr, {compress = true} = {}) {
+  if (Array.isArray(cidr)) {
+    return cidr.map(entry => normalize(entry, {compress}));
+  } else {
+    return doNormalize(cidr, {compress});
+  }
 }
 
 function parse(str) {
