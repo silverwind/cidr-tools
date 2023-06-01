@@ -1,14 +1,13 @@
 import ipRegex from "ip-regex";
 import cidrRegex from "cidr-regex";
 import naturalCompare from "string-natural-compare";
-import {parseIp, stringifyIp} from "ip-bigint";
+import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 const bits = {
   "v4": 32,
   "v6": 128,
 };
 
-const normalizeIp = str => stringifyIp(parseIp(str));
 const uniq = arr => Array.from(new Set(arr));
 
 function isIP(ip) {
