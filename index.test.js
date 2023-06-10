@@ -121,6 +121,12 @@ test("contains", () => {
   expect(contains(["1.0.0.0/24", "::/0", "3.0.0.0/24"], ["::1", "::2"])).toEqual(true);
   expect(contains(["1.0.0.0/24", "::/128", "3.0.0.0/24"], "::1")).toEqual(false);
   expect(contains(["1.0.0.0/24", "::/128", "3.0.0.0/24"], ["::1", "::2"])).toEqual(false);
+  expect(contains(["fe80::%int"], ["fe80::"])).toEqual(true);
+  expect(contains(["fe80::%int"], ["fe80::%int"])).toEqual(true);
+  expect(contains(["fe80::"], ["fe80::%int"])).toEqual(true);
+  expect(contains(["fe80::%int/64"], ["fe80::/64"])).toEqual(true);
+  expect(contains(["fe80::%int/64"], ["fe80::%int/64"])).toEqual(true);
+  expect(contains(["fe80::/64"], ["fe80::%int/64"])).toEqual(true);
 
   const privates = [
     "10.0.0.0/8",
