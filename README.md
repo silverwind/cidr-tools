@@ -75,7 +75,7 @@ Returns a string or array (depending on input) with a normalized representation.
 
 - `network` *String*: A CIDR or IP address.
 
-Returns a `parsed` Object. Specifically, this can be used to test whether the passed CIDR or IP is IPv4 or IPv6.
+Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or work with the BigInts directly.
 
 `parsed`: `Object`
   - `cidr` String: The CIDR of the network.
