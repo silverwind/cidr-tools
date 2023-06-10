@@ -19,15 +19,15 @@
   ],
   "dependencies": {
     "cidr-regex": "4.0.3",
-    "ip-bigint": "7.2.0",
+    "ip-bigint": "7.2.1",
     "ip-regex": "5.0.0",
     "string-natural-compare": "3.0.1"
   },
   "devDependencies": {
-    "eslint": "8.41.0",
-    "eslint-config-silverwind": "73.0.0",
+    "eslint": "8.42.0",
+    "eslint-config-silverwind": "73.0.2",
     "updates": "14.1.1",
     "versions": "11.0.1",
-    "vitest": "0.31.4"
+    "vitest": "0.32.0"
   }
 }
