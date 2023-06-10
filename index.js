@@ -397,3 +397,13 @@ export function contains(a, b) {
 
   return numFound === numExpected;
 }
+
+export default {
+  merge,
+  exclude,
+  expand,
+  overlap,
+  contains,
+  normalize,
+  parse,
+};

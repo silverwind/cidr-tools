@@ -1,3 +1,5 @@
+import exp from "constants";
+
 type IPv4Address = string;
 type IPv4CIDR = string;
 type IPv6Address = string;
@@ -27,3 +29,14 @@ export function overlap(networksA: Networks, networksB: Networks): boolean;
 export function normalize(cidr: Networks, opts?: NormalizeOpts): Networks;
 export function contains(networksA: Networks, networksB: Networks): boolean;
 export function parse(network: Network): Parsed;
+
+declare const _default: {
+  merge: typeof merge;
+  exclude: typeof exclude;
+  expand: typeof expand;
+  overlap: typeof overlap;
+  normalize: typeof normalize;
+  contains: typeof contains;
+  parse: typeof parse;
+};
+export default _default;

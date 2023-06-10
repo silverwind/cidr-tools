@@ -1,4 +1,14 @@
-import {merge, exclude, expand, overlap, normalize, contains, parse} from "./index.js";
+import m, {merge, exclude, expand, overlap, normalize, contains, parse} from "./index.js";
+
+test("exports", () => {
+  expect(m.merge).toEqual(merge);
+  expect(m.exclude).toEqual(exclude);
+  expect(m.expand).toEqual(expand);
+  expect(m.overlap).toEqual(overlap);
+  expect(m.contains).toEqual(contains);
+  expect(m.normalize).toEqual(normalize);
+  expect(m.parse).toEqual(parse);
+});
 
 test("merge", () => {
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
