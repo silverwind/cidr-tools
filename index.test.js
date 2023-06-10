@@ -138,11 +138,11 @@ test("contains", () => {
 });
 
 test("parse", () => {
-  expect(parse("::/64")).toEqual({
-    cidr: "::/64",
-    version: 6,
-    prefix: "64",
-    start: 0n,
-    end: 18446744073709551615n,
-  });
+  const obj = parse("::/64");
+  expect(obj.cidr).toEqual("::/64");
+  expect(obj.version).toEqual(6);
+  expect(obj.prefix).toEqual("64");
+  expect(obj.start).toEqual(0n);
+  expect(obj.end).toEqual(18446744073709551615n);
+  expect(obj.single).toEqual(false);
 });
