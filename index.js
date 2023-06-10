@@ -10,7 +10,7 @@ const bits = {
 
 const uniq = arr => Array.from(new Set(arr));
 
-function isIP(ip) {
+export function isIP(ip) {
   if (ipRegex.v4({exact: true}).test(ip)) return 4;
   if (ipRegex.v6({exact: true}).test(ip)) return 6;
   return 0;
@@ -41,9 +41,11 @@ export function normalize(cidr, {compress = true, hexify = false} = {}) {
   }
 }
 
-function parse(str) {
+export function parse(str) {
   const cidrVersion = isCidr(str);
   const parsed = Object.create(null);
+  parsed.single = false;
+
   if (cidrVersion) {
     parsed.cidr = str;
     parsed.version = cidrVersion;

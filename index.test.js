@@ -1,4 +1,4 @@
-import {merge, exclude, expand, overlap, normalize, contains} from "./index.js";
+import {merge, exclude, expand, overlap, normalize, contains, parse} from "./index.js";
 
 test("merge", () => {
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
@@ -135,4 +135,14 @@ test("contains", () => {
   expect(contains(privates, ["128.0.0.0", "::1"])).toEqual(false);
   expect(contains(privates, ["127.0.0.1", "fc00::"])).toEqual(true);
   expect(contains(privates, ["127.0.0.1", "192.168.255.255", "fe80::2"])).toEqual(true);
+});
+
+test("parse", () => {
+  expect(parse("::/64")).toEqual({
+    cidr: "::/64",
+    version: 6,
+    prefix: "64",
+    start: 0n,
+    end: 18446744073709551615n,
+  });
 });

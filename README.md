@@ -11,7 +11,7 @@ $ npm i cidr-tools
 ## Example
 
 ```js
-import {merge, exclude, expand, overlap, contains, normalize} from 'cidr-tools';
+import {merge, exclude, expand, overlap, contains, normalize, parse} from 'cidr-tools';
 
 merge(['1.0.0.0/24', '1.0.1.0/24']); //=> ['1.0.0.0/23']
 exclude(['::1/127'], ['::1/128']) //=> ['::/128']
@@ -19,6 +19,7 @@ expand(['2001:db8::/126']) //=> ['2001:db8::', '2001:db8::1', '2001:db8::2', '20
 overlap('1.0.0.0/24', '1.0.0.128/25') //=> true
 contains(["1.0.0.0/24", "2.0.0.0/24"], "1.0.0.1") //=> true
 normalize('::ffff/64') //=> '::/64'
+parse('::/64'); // => {cidr: '::/64', version: 6, prefix: '64', start: 0n, end: 18446744073709551615n}
 ```
 
 ## API
@@ -69,5 +70,20 @@ Returns a string or array (depending on input) with a normalized representation.
 `opts`: Options `Object`
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
+
+### parse(network)
+
+- `network` *String*: A CIDR or IP address.
+
+Returns a `parsed` Object. Specifically, this can be used to test whether the passed CIDR or IP is IPv4 or IPv6.
+
+`parsed`: `Object`
+  - `cidr` String: The CIDR of the network.
+  - `version` Number: Either `4` or `6`.
+  - `prefix` String: The network prefix, e.g. `/64`.
+  - `start` BigInt: Start of the network.
+  - `end` BigInt: Start of the network.
+  - `single` Boolean: `true` when is a single IP.
+
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
