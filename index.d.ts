@@ -1,5 +1,3 @@
-import exp from "constants";
-
 type IPv4Address = string;
 type IPv4CIDR = string;
 type IPv6Address = string;
