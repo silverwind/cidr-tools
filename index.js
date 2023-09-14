@@ -4,8 +4,8 @@ import naturalCompare from "string-natural-compare";
 import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 const bits = {
-  "v4": 32,
-  "v6": 128,
+  4: 32,
+  6: 128,
 };
 
 const uniq = arr => Array.from(new Set(arr));
@@ -52,7 +52,7 @@ export function parse(str) {
   } else {
     const version = isIP(str);
     if (version) {
-      parsed.cidr = `${str}/${bits[`v${version}`]}`;
+      parsed.cidr = `${str}/${bits[version]}`;
       parsed.version = version;
       parsed.single = true;
     } else {
@@ -63,7 +63,7 @@ export function parse(str) {
   const [ip, prefix] = parsed.cidr.split("/");
   parsed.prefix = prefix;
   const {number, version} = parseIp(ip);
-  const numBits = bits[`v${version}`];
+  const numBits = bits[version];
   const ipBits = number.toString(2).padStart(numBits, "0");
   const prefixLen = Number(numBits - prefix);
   const startBits = ipBits.substring(0, numBits - prefixLen);
@@ -229,7 +229,7 @@ function diff(a, b) {
 function formatPart(part, v) {
   const ip = normalize(stringifyIp({
     number: BigInt(part.start.toString()),
-    version: Number(v.substring(1)),
+    version: v,
   }));
   const zeroes = diff(part.end, part.start).toString(2);
   const prefix = bits[v] - (zeroes.match(/0/g) || []).length;
@@ -237,10 +237,8 @@ function formatPart(part, v) {
 }
 
 function mapNets(nets) {
-  const maps = {v4: {}, v6: {}};
-  for (const {start, end, version} of nets) {
-    const v = `v${version}`;
-
+  const maps = {4: {}, 6: {}};
+  for (const {start, end, version: v} of nets) {
     if (!maps[v][start]) maps[v][start] = {};
     if (!maps[v][end]) maps[v][end] = {};
 
@@ -263,11 +261,11 @@ export function merge(nets) {
   nets = uniq((Array.isArray(nets) ? nets : [nets]).map(parse));
   const maps = mapNets(nets);
 
-  const merged = {v4: [], v6: []};
-  const start = {v4: null, v6: null};
-  const end = {v4: null, v6: null};
+  const merged = {4: [], 6: []};
+  const start = {4: null, 6: null};
+  const end = {4: null, 6: null};
 
-  for (const v of ["v4", "v6"]) {
+  for (const v of [4, 6]) {
     const numbers = Object.keys(maps[v]).sort(naturalCompare);
     let depth = 0;
 
@@ -298,7 +296,7 @@ export function merge(nets) {
     }
   }
 
-  return [...merged.v4.sort(naturalCompare), ...merged.v6.sort(naturalCompare)];
+  return [...merged[4].sort(naturalCompare), ...merged[6].sort(naturalCompare)];
 }
 
 export function exclude(basenets, exclnets) {
@@ -308,18 +306,18 @@ export function exclude(basenets, exclnets) {
   basenets = merge(basenets);
   exclnets = merge(exclnets);
 
-  const bases = {v4: [], v6: []};
-  const excls = {v4: [], v6: []};
+  const bases = {4: [], 6: []};
+  const excls = {4: [], 6: []};
 
   for (const basenet of basenets) {
-    bases[`v${isCidr(basenet)}`].push(basenet);
+    bases[isCidr(basenet)].push(basenet);
   }
 
   for (const exclnet of exclnets) {
-    excls[`v${isCidr(exclnet)}`].push(exclnet);
+    excls[isCidr(exclnet)].push(exclnet);
   }
 
-  for (const v of ["v4", "v6"]) {
+  for (const v of [4, 6]) {
     for (const exclcidr of excls[v]) {
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parse(basecidr);
@@ -333,7 +331,7 @@ export function exclude(basenets, exclnets) {
     }
   }
 
-  return bases.v4.concat(bases.v6);
+  return bases[4].concat(bases[6]);
 }
 
 export function expand(nets) {
