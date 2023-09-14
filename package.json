@@ -24,12 +24,12 @@
     "string-natural-compare": "3.0.1"
   },
   "devDependencies": {
-    "eslint": "8.45.0",
-    "eslint-config-silverwind": "74.0.0",
-    "tsd": "0.28.1",
-    "updates": "14.3.4",
-    "versions": "11.0.1",
-    "vitest": "0.33.0",
-    "vitest-config-silverwind": "2.1.0"
+    "eslint": "8.49.0",
+    "eslint-config-silverwind": "74.1.4",
+    "tsd": "0.29.0",
+    "updates": "15.0.2",
+    "versions": "11.1.0",
+    "vitest": "0.34.4",
+    "vitest-config-silverwind": "3.0.0"
   }
 }
