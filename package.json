@@ -11,7 +11,7 @@
   "types": "./index.d.ts",
   "sideEffects": false,
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "files": [
     "./index.js",
