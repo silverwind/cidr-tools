@@ -1,7 +1,5 @@
-import ipRegex from "ip-regex";
-import cidrRegex from "cidr-regex";
+import {parseIp, stringifyIp, normalizeIp, ipVersion} from "ip-bigint";
 import naturalCompare from "string-natural-compare";
-import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 const bits = {
   4: 32,
@@ -9,18 +7,7 @@ const bits = {
 };
 
 const uniq = arr => Array.from(new Set(arr));
-
-export function isIP(ip) {
-  if (ipRegex.v4({exact: true}).test(ip)) return 4;
-  if (ipRegex.v6({exact: true}).test(ip)) return 6;
-  return 0;
-}
-
-function isCidr(ip) {
-  if (cidrRegex.v4({exact: true}).test(ip)) return 4;
-  if (cidrRegex.v6({exact: true}).test(ip)) return 6;
-  return 0;
-}
+const cidrVersion = cidr => cidr.includes("/") ? ipVersion(cidr) : 0;
 
 function doNormalize(cidr, {compress = true, hexify = false} = {}) {
   const {start, prefix, single, version} = parse(cidr);
@@ -42,15 +29,15 @@ export function normalize(cidr, {compress = true, hexify = false} = {}) {
 }
 
 export function parse(str) {
-  const cidrVersion = isCidr(str);
+  const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
   parsed.single = false;
 
-  if (cidrVersion) {
+  if (cidrVer) {
     parsed.cidr = str;
-    parsed.version = cidrVersion;
+    parsed.version = cidrVer;
   } else {
-    const version = isIP(str);
+    const version = ipVersion(str);
     if (version) {
       parsed.cidr = `${str}/${bits[version]}`;
       parsed.version = version;
@@ -310,11 +297,11 @@ export function exclude(basenets, exclnets) {
   const excls = {4: [], 6: []};
 
   for (const basenet of basenets) {
-    bases[isCidr(basenet)].push(basenet);
+    bases[cidrVersion(basenet)].push(basenet);
   }
 
   for (const exclnet of exclnets) {
-    excls[isCidr(exclnet)].push(exclnet);
+    excls[cidrVersion(exclnet)].push(exclnet);
   }
 
   for (const v of [4, 6]) {

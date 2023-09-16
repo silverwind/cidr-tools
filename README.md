@@ -20,6 +20,8 @@ parse("::/64"); // => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 
 
 All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
 
+It is expected that the passed CIDRs and IPs are validated as the module's own input validation is rudimentary. You are encouraged to use modules like [is-cidr](https://github.com/silverwind/is-cidr) and [is-ip](https://github.com/sindresorhus/is-ip) to validate before passing to this module.
+
 This module requires [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility) support in your environment.
 
 ### merge(networks)
