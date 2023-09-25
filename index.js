@@ -8,6 +8,7 @@ const bits = {
 const uniq = arr => Array.from(new Set(arr));
 const cidrVersion = cidr => cidr.includes("/") ? ipVersion(cidr) : 0;
 
+// TODO: pass parsed objects in here
 function compare(a, b) {
   const {number: aNum, version: aVersion} = parseIp(a.replace(/\/.+/, ""));
   const {number: bNum, version: bVersion} = parseIp(b.replace(/\/.+/, ""));
