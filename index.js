@@ -1,5 +1,4 @@
 import {parseIp, stringifyIp, normalizeIp, ipVersion} from "ip-bigint";
-import naturalCompare from "string-natural-compare";
 
 const bits = {
   4: 32,
@@ -8,6 +7,16 @@ const bits = {
 
 const uniq = arr => Array.from(new Set(arr));
 const cidrVersion = cidr => cidr.includes("/") ? ipVersion(cidr) : 0;
+
+function compare(a, b) {
+  const {number: aNum, version: aVersion} = parseIp(a.replace(/\/.+/, ""));
+  const {number: bNum, version: bVersion} = parseIp(b.replace(/\/.+/, ""));
+  if (aVersion === bVersion) {
+    return aNum - bNum > 0n ? 1 : aNum - bNum < 0n ? -1 : 0;
+  } else {
+    return aVersion > bVersion;
+  }
+}
 
 function doNormalize(cidr, {compress = true, hexify = false} = {}) {
   const {start, prefix, single, version} = parse(cidr);
@@ -253,7 +262,7 @@ export function merge(nets) {
   const end = {4: null, 6: null};
 
   for (const v of [4, 6]) {
-    const numbers = Object.keys(maps[v]).sort(naturalCompare);
+    const numbers = Object.keys(maps[v]);
     let depth = 0;
 
     for (const [index, number] of numbers.entries()) {
@@ -283,7 +292,7 @@ export function merge(nets) {
     }
   }
 
-  return [...merged[4].sort(naturalCompare), ...merged[6].sort(naturalCompare)];
+  return [...merged[4].sort(compare), ...merged[6].sort(compare)];
 }
 
 export function exclude(basenets, exclnets) {
@@ -318,7 +327,7 @@ export function exclude(basenets, exclnets) {
     }
   }
 
-  return bases[4].concat(bases[6]);
+  return bases[4].concat(bases[6]).sort(compare);
 }
 
 export function expand(nets) {

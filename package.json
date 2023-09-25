@@ -18,8 +18,7 @@
     "./index.d.ts"
   ],
   "dependencies": {
-    "ip-bigint": "7.3.0",
-    "string-natural-compare": "3.0.1"
+    "ip-bigint": "7.3.0"
   },
   "devDependencies": {
     "eslint": "8.49.0",
