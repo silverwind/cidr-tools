@@ -21,12 +21,12 @@
     "ip-bigint": "7.3.0"
   },
   "devDependencies": {
-    "eslint": "8.49.0",
-    "eslint-config-silverwind": "75.0.6",
+    "eslint": "8.50.0",
+    "eslint-config-silverwind": "76.0.2",
     "tsd": "0.29.0",
     "updates": "15.0.2",
     "versions": "11.1.0",
-    "vitest": "0.34.4",
+    "vitest": "0.34.5",
     "vitest-config-silverwind": "3.0.0"
   }
 }
