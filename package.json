@@ -1,6 +1,6 @@
 {
   "name": "cidr-tools",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "author": "silverwind <me@silverwind.io>",
   "description": "Tools to work with IPv4 and IPv6 CIDR",
   "repository": "silverwind/cidr-tools",
