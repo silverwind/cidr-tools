@@ -18,15 +18,15 @@
     "./index.d.ts"
   ],
   "dependencies": {
-    "ip-bigint": "7.3.0"
+    "ip-bigint": "8.0.0"
   },
   "devDependencies": {
-    "eslint": "8.50.0",
-    "eslint-config-silverwind": "76.0.2",
+    "eslint": "8.51.0",
+    "eslint-config-silverwind": "76.0.4",
     "tsd": "0.29.0",
     "updates": "15.0.2",
     "versions": "11.1.0",
-    "vitest": "0.34.5",
+    "vitest": "0.34.6",
     "vitest-config-silverwind": "3.0.0"
   }
 }
