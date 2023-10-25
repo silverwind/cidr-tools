@@ -81,5 +81,11 @@ Returns a `parsed` Object which is used internally by this module. It can be use
   - `end` BigInt: Start of the network.
   - `single` Boolean: `true` when is a single IP.
 
+## Related
+
+- [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
+- [ip-regex](https://github.com/sindresorhus/ip-regex) - Regular expression for matching IP addresses
+- [ip-bigint](https://github.com/silverwind/ip-bigint) - Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
+- [cidr-tools](https://github.com/silverwind/cidr-tools) - Tools to work with IPv4 and IPv6 CIDR network lists
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
