@@ -83,10 +83,10 @@ Returns a `parsed` Object which is used internally by this module. It can be use
 
 ## Related
 
-- [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
-- [cidr-regex](https://github.com/silverwind/cidr-regex) - Check if a string is an IP address in CIDR notation
-- [is-ip](https://github.com/sindresorhus/is-ip) -  Check if a string is an IP address
-- [ip-regex](https://github.com/sindresorhus/ip-regex) - Regular expression for matching IP addresses
 - [ip-bigint](https://github.com/silverwind/ip-bigint) - Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
+- [ip-regex](https://github.com/sindresorhus/ip-regex) - Regular expression for matching IP addresses
+- [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
+- [is-ip](https://github.com/sindresorhus/is-ip) - Check if a string is an IP address
+- [cidr-regex](https://github.com/silverwind/cidr-regex) - Check if a string is an IP address in CIDR notation
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
