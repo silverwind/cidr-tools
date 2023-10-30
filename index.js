@@ -255,7 +255,8 @@ function mapNets(nets) {
 }
 
 export function merge(nets) {
-  nets = uniq((Array.isArray(nets) ? nets : [nets]).map(parse));
+  // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
+  nets = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parse));
   const maps = mapNets(nets);
 
   const merged = {4: [], 6: []};
