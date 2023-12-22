@@ -71,15 +71,15 @@ Returns a string or array (depending on input) with a normalized representation.
 
 - `network` *String*: A CIDR or IP address.
 
-Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or work with the BigInts directly.
+Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly.
 
 `parsed`: `Object`
   - `cidr` String: The CIDR of the network.
-  - `version` Number: Either `4` or `6`.
+  - `version` Number: IP protocol version. Either `4` or `6`.
   - `prefix` String: The network prefix, e.g. `/64`.
   - `start` BigInt: Start of the network.
   - `end` BigInt: Start of the network.
-  - `single` Boolean: `true` when is a single IP.
+  - `single` Boolean: `true` when the network is a single IP.
 
 ## Related
 
