@@ -1,10 +1,6 @@
 import {parseIp, stringifyIp, normalizeIp, ipVersion} from "ip-bigint";
 
-const bits = {
-  4: 32,
-  6: 128,
-};
-
+const bits = {4: 32, 6: 128};
 const uniq = arr => Array.from(new Set(arr));
 const cidrVersion = cidr => cidr.includes("/") ? ipVersion(cidr) : 0;
 
@@ -223,32 +219,29 @@ function diff(a, b) {
   return a - b;
 }
 
-function formatPart(part, v) {
-  const ip = normalize(stringifyIp({
-    number: BigInt(part.start.toString()),
-    version: v,
-  }));
+function formatPart(part, version) {
+  const ip = normalize(stringifyIp({number: BigInt(part.start.toString()), version}));
   const zeroes = diff(part.end, part.start).toString(2);
-  const prefix = bits[v] - (zeroes.match(/0/g) || []).length;
+  const prefix = bits[version] - (zeroes.match(/0/g) || []).length;
   return `${ip}/${prefix}`;
 }
 
 function mapNets(nets) {
   const maps = {4: {}, 6: {}};
-  for (const {start, end, version: v} of nets) {
-    if (!maps[v][start]) maps[v][start] = {};
-    if (!maps[v][end]) maps[v][end] = {};
+  for (const {start, end, version} of nets) {
+    if (!maps[version][start]) maps[version][start] = {};
+    if (!maps[version][end]) maps[version][end] = {};
 
-    if (maps[v][start].start) {
-      maps[v][start].start += 1;
+    if (maps[version][start].start) {
+      maps[version][start].start += 1;
     } else {
-      maps[v][start].start = 1;
+      maps[version][start].start = 1;
     }
 
-    if (maps[v][end].end) {
-      maps[v][end].end += 1;
+    if (maps[version][end].end) {
+      maps[version][end].end += 1;
     } else {
-      maps[v][end].end = 1;
+      maps[version][end].end = 1;
     }
   }
   return maps;
