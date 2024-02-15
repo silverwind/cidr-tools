@@ -157,11 +157,36 @@ test("contains", () => {
 });
 
 test("parse", () => {
-  const obj = parse("::/64");
-  expect(obj.cidr).toEqual("::/64");
-  expect(obj.version).toEqual(6);
-  expect(obj.prefix).toEqual("64");
-  expect(obj.start).toEqual(0n);
-  expect(obj.end).toEqual(18446744073709551615n);
-  expect(obj.single).toEqual(false);
+  expect(parse("::/64")).toEqual({
+    cidr: "::/64",
+    version: 6,
+    prefix: "64",
+    start: 0n,
+    end: 18446744073709551615n,
+    single: false,
+  });
+  expect(parse("1.2.3.4/24")).toEqual({
+    cidr: "1.2.3.4/24",
+    version: 4,
+    prefix: "24",
+    start: 16909056n,
+    end: 16909311n,
+    single: false,
+  });
+  expect(parse("2001:db8::")).toEqual({
+    cidr: "2001:db8::/128",
+    version: 6,
+    prefix: "128",
+    start: 42540766411282592856903984951653826560n,
+    end: 42540766411282592856903984951653826560n,
+    single: true,
+  });
+  expect(parse("2001:db8::/128")).toEqual({
+    cidr: "2001:db8::/128",
+    version: 6,
+    prefix: "128",
+    start: 42540766411282592856903984951653826560n,
+    end: 42540766411282592856903984951653826560n,
+    single: true,
+  });
 });

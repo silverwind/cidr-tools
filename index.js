@@ -37,7 +37,6 @@ export function normalize(cidr, {compress = true, hexify = false} = {}) {
 export function parse(str) {
   const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
-  parsed.single = false;
 
   if (cidrVer) {
     parsed.cidr = str;
@@ -47,7 +46,6 @@ export function parse(str) {
     if (version) {
       parsed.cidr = `${str}/${bits[version]}`;
       parsed.version = version;
-      parsed.single = true;
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
@@ -55,6 +53,7 @@ export function parse(str) {
 
   const [ip, prefix] = parsed.cidr.split("/");
   parsed.prefix = prefix;
+  parsed.single = prefix === String(bits[parsed.version]);
   const {number, version} = parseIp(ip);
   const numBits = bits[version];
   const ipBits = number.toString(2).padStart(numBits, "0");
