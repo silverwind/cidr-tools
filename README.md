@@ -79,7 +79,6 @@ Returns a `parsed` Object which is used internally by this module. It can be use
   - `prefix` String: The network prefix, e.g. `/64`.
   - `start` BigInt: Start of the network.
   - `end` BigInt: Start of the network.
-  - `single` Boolean: `true` when the network is a single IP.
 
 ## Related
 

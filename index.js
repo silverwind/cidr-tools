@@ -16,8 +16,8 @@ function compare(a, b) {
 }
 
 function doNormalize(cidr, {compress = true, hexify = false} = {}) {
-  const {start, prefix, single, version} = parse(cidr);
-  if (!single) { // cidr
+  const {start, end, prefix, version} = parse(cidr);
+  if (start !== end) { // cidr
     // set network address to first address
     const ip = normalizeIp(stringifyIp({number: start, version}), {compress, hexify});
     return `${ip}/${prefix}`;
@@ -53,7 +53,6 @@ export function parse(str) {
 
   const [ip, prefix] = parsed.cidr.split("/");
   parsed.prefix = prefix;
-  parsed.single = prefix === String(bits[parsed.version]);
   const {number, version} = parseIp(ip);
   const numBits = bits[version];
   const ipBits = number.toString(2).padStart(numBits, "0");

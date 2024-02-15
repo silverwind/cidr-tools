@@ -12,7 +12,6 @@ type Parsed = {
   prefix: string;
   start: bigint;
   end: bigint;
-  single: boolean;
 };
 
 type NormalizeOpts = {

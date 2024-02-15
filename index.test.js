@@ -163,7 +163,6 @@ test("parse", () => {
     prefix: "64",
     start: 0n,
     end: 18446744073709551615n,
-    single: false,
   });
   expect(parse("1.2.3.4/24")).toEqual({
     cidr: "1.2.3.4/24",
@@ -171,7 +170,6 @@ test("parse", () => {
     prefix: "24",
     start: 16909056n,
     end: 16909311n,
-    single: false,
   });
   expect(parse("2001:db8::")).toEqual({
     cidr: "2001:db8::/128",
@@ -179,7 +177,6 @@ test("parse", () => {
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
-    single: true,
   });
   expect(parse("2001:db8::/128")).toEqual({
     cidr: "2001:db8::/128",
@@ -187,6 +184,5 @@ test("parse", () => {
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
-    single: true,
   });
 });
