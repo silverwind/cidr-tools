@@ -52,6 +52,11 @@ export function parse(str) {
   }
 
   const [ip, prefix] = parsed.cidr.split("/");
+
+  if (!/^[0-9]+$/.test(prefix)) {
+    throw new Error(`Network is not a CIDR or IP: ${str}`);
+  }
+
   parsed.prefix = prefix;
   const {number, version} = parseIp(ip);
   const numBits = bits[version];
