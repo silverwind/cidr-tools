@@ -2,7 +2,6 @@ type IPv4Address = string;
 type IPv4CIDR = string;
 type IPv6Address = string;
 type IPv6CIDR = string;
-
 type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
 type Networks = Network | Network[];
 
