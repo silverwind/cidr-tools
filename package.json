@@ -22,11 +22,11 @@
   },
   "devDependencies": {
     "eslint": "8.56.0",
-    "eslint-config-silverwind": "79.4.0",
-    "tsd": "0.30.0",
-    "updates": "15.1.1",
-    "versions": "12.0.0",
-    "vitest": "1.1.0",
-    "vitest-config-silverwind": "5.0.0"
+    "eslint-config-silverwind": "80.0.3",
+    "tsd": "0.30.4",
+    "updates": "15.1.2",
+    "versions": "12.0.1",
+    "vitest": "1.2.2",
+    "vitest-config-silverwind": "5.1.1"
   }
 }
