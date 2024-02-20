@@ -1,4 +1,7 @@
 import m, {merge, exclude, expand, overlap, normalize, contains, parse} from "./index.js";
+import {inspect} from "node:util";
+
+inspect.defaultOptions.depth = null;
 
 test("exports", () => {
   expect(m.merge).toEqual(merge);
@@ -11,6 +14,8 @@ test("exports", () => {
 });
 
 test("merge", () => {
+  expect(merge(["0.0.0.0", "0.0.0.1"])).toEqual(["0.0.0.0/31"]);
+  expect(merge(["0.0.0.0", "0.0.0.2"])).toEqual(["0.0.0.0/32", "0.0.0.2/32"]);
   expect(merge(["1.0.0.0", "1.0.0.1"])).toEqual(["1.0.0.0/31"]);
   expect(merge(["1.0.0.0/24", "1.0.1.0/24"])).toEqual(["1.0.0.0/23"]);
   expect(merge(["1.0.0.0/24", "1.0.0.0"])).toEqual(["1.0.0.0/24"]);
@@ -28,7 +33,8 @@ test("merge", () => {
   expect(merge(["1:1:1:1::/128", "1:1:1:2::/128"])).toEqual(["1:1:1:1::/128", "1:1:1:2::/128"]);
   expect(merge(["::2:0:0/128", "::1:0:0/128"])).toEqual(["::1:0:0/128", "::2:0:0/128"]);
   expect(merge(["::2:0:0/128", "::1:0:0/128", "::2:0:1/128"])).toEqual(["::1:0:0/128", "::2:0:0/127"]);
-  // expect(merge(["0:0:0:0:0:100:0:0:1/128", "0:0:0:0:0:100:0:0:3/128"])).toEqual(["::100:0:0:1/128", "::100:0:0:3/128"]);
+  expect(merge(["0:0:0:0:0:100:0:0:1/128", "0:0:0:0:0:100:0:0:3/128"])).toEqual(["::100:0:0:1/128", "::100:0:0:3/128"]);
+  expect(merge(["2001:2160:7:30e::f8/128", "2001:2160:7:30e::fe/128"])).toEqual(["2001:2160:7:30e::f8/128", "2001:2160:7:30e::fe/128"]);
 });
 
 test("exclude", () => {

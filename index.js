@@ -270,13 +270,16 @@ function doMerge(maps, v) {
     if (marker.start) depth += marker.start;
     if (marker.end) depth -= marker.end;
 
-    if (marker.end && depth === 0 && ((numbers[index + 1] - numbers[index]) > 1)) {
+    const next = numbers[index + 1];
+    if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
+      // when there is a end and the next part is more than one number away, we cut a part
       for (const sub of subparts({start, end})) {
         merged.push(formatPart(sub, v));
       }
       start = null;
       end = null;
     } else if (index === (numbers.length - 1)) {
+      // cut the final part
       for (const sub of subparts({start, end})) {
         merged.push(formatPart(sub, v));
       }
