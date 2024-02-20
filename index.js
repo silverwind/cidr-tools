@@ -250,44 +250,49 @@ function mapNets(nets) {
   return maps;
 }
 
+function doMerge(maps, v) {
+  let start = null;
+  let end = null;
+  const numbers = Object.keys(maps);
+  let depth = 0;
+  const merged = [];
+
+  for (const [index, number] of numbers.entries()) {
+    const marker = maps[number];
+
+    if (start === null && marker.start) {
+      start = BigInt(number);
+    }
+    if (marker.end) {
+      end = BigInt(number);
+    }
+
+    if (marker.start) depth += marker.start;
+    if (marker.end) depth -= marker.end;
+
+    if (marker.end && depth === 0 && ((numbers[index + 1] - numbers[index]) > 1)) {
+      for (const sub of subparts({start, end})) {
+        merged.push(formatPart(sub, v));
+      }
+      start = null;
+      end = null;
+    } else if (index === (numbers.length - 1)) {
+      for (const sub of subparts({start, end})) {
+        merged.push(formatPart(sub, v));
+      }
+    }
+  }
+  return merged;
+}
+
 export function merge(nets) {
   // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
   nets = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parse));
   const maps = mapNets(nets);
 
   const merged = {4: [], 6: []};
-  const start = {4: null, 6: null};
-  const end = {4: null, 6: null};
-
   for (const v of [4, 6]) {
-    const numbers = Object.keys(maps[v]);
-    let depth = 0;
-
-    for (const [index, number] of numbers.entries()) {
-      const marker = maps[v][number];
-
-      if (start[v] === null && marker.start) {
-        start[v] = BigInt(number);
-      }
-      if (marker.end) {
-        end[v] = BigInt(number);
-      }
-
-      if (marker.start) depth += marker.start;
-      if (marker.end) depth -= marker.end;
-
-      if (marker.end && depth === 0 && ((numbers[index + 1] - numbers[index]) > 1)) {
-        for (const sub of subparts({start: start[v], end: end[v]})) {
-          merged[v].push(formatPart(sub, v));
-        }
-        start[v] = null;
-        end[v] = null;
-      } else if (index === (numbers.length - 1)) {
-        for (const sub of subparts({start: start[v], end: end[v]})) {
-          merged[v].push(formatPart(sub, v));
-        }
-      }
-    }
+    merged[v] = doMerge(maps[v], v);
   }
 
   return [...merged[4].sort(compare), ...merged[6].sort(compare)];
