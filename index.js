@@ -230,7 +230,7 @@ function formatPart(part, version) {
 }
 
 function mapNets(nets) {
-  const maps = {4: {}, 6: {}};
+  const maps = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
     if (!maps[version][start]) maps[version][start] = {};
     if (!maps[version][end]) maps[version][end] = {};
