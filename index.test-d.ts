@@ -1,19 +1,21 @@
-import m, {merge, exclude, expand, overlap, normalize, contains, parse} from "./index.js";
+import m, {
+  mergeCidr, excludeCidr, expandCidr, overlapCidr, normalizeCidr, containsCidr, parseCidr,
+} from "./index.js";
 
-merge(["::", "::"])
-exclude(["::"], ["::"])
-expand(["::", "::"])
-overlap(["::"], ["::"])
-contains(["::"], ["::"])
-normalize("::")
-normalize("::", {compress: true})
-parse("::")
+mergeCidr(["::", "::"])
+excludeCidr(["::"], ["::"])
+expandCidr(["::", "::"])
+overlapCidr(["::"], ["::"])
+containsCidr(["::"], ["::"])
+normalizeCidr("::")
+normalizeCidr("::", {compress: true})
+parseCidr("::")
 
-m.merge(["::", "::"])
-m.exclude(["::"], ["::"])
-m.expand(["::", "::"])
-m.overlap(["::"], ["::"])
-m.contains(["::"], ["::"])
-m.normalize("::")
-m.normalize("::", {compress: true})
-m.parse("::")
+m.mergeCidr(["::", "::"])
+m.excludeCidr(["::"], ["::"])
+m.expandCidr(["::", "::"])
+m.overlapCidr(["::"], ["::"])
+m.containsCidr(["::"], ["::"])
+m.normalizeCidr("::")
+m.normalizeCidr("::", {compress: true})
+m.parseCidr("::")

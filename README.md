@@ -5,15 +5,15 @@
 ## Usage
 
 ```js
-import {merge, exclude, expand, overlap, contains, normalize, parse} from "cidr-tools";
+import {mergeCidr, excludeCidr, expandCidr, overlapCidr, containsCidr, normalizeCidr, parseCidr} from "cidr-tools";
 
-merge(["1.0.0.0/24", "1.0.1.0/24"]); //=> ["1.0.0.0/23"]
-exclude(["::1/127"], "::1/128") //=> ["::/128"]
-expand(["2001:db8::/126"]) //=> ["2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"]
-overlap("1.0.0.0/24", "1.0.0.128/25") //=> true
-contains(["1.0.0.0/24", "2.0.0.0/24"], "1.0.0.1") //=> true
-normalize("::ffff/64") //=> "::/64"
-parse("::/64"); // => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
+mergeCidr(["1.0.0.0/24", "1.0.1.0/24"]); //=> ["1.0.0.0/23"]
+excludeCidr(["::1/127"], "::1/128") //=> ["::/128"]
+expandCidr(["2001:db8::/126"]) //=> ["2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"]
+overlapCidr("1.0.0.0/24", "1.0.0.128/25") //=> true
+containsCidr(["1.0.0.0/24", "2.0.0.0/24"], "1.0.0.1") //=> true
+normalizeCidr("::ffff/64") //=> "::/64"
+parseCidr("::/64"); // => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
 ```
 
 ## API
@@ -24,40 +24,40 @@ It is expected that the passed CIDRs and IPs are validated as the module's own i
 
 This module requires [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility) support in your environment.
 
-### merge(networks)
+### mergeCidr(networks)
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns an array of merged networks.
 
-### exclude(baseNetworks, excludeNetworks)
+### excludeCidr(baseNetworks, excludeNetworks)
 
 - `baseNetworks` *String* or *Array*: One or more CIDR or IP addresses.
 - `excludeNetworks` *String* or *Array*: One or more CIDR or IP addresses to exclude from `baseNetworks`.
 
 Returns an array of merged remaining networks.
 
-### expand(networks)
+### expandCidr(networks)
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns an array of individual IPs contained in the networks.
 
-### overlap(networksA, networksB)
+### overlapCidr(networksA, networksB)
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
 
 Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`.
 
-### contains(networksA, networksB)
+### containsCidr(networksA, networksB)
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
 
 Returns a boolean that indicates whether `networksA` fully contain all `networksB`.
 
-### normalize(networks, [opts])
+### normalizeCidr(networks, [opts])
 
 - `networks` *String* or *Array*: One or more CIDR or IP address.
 
@@ -67,7 +67,7 @@ Returns a string or array (depending on input) with a normalized representation.
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
 
-### parse(network)
+### parseCidr(network)
 
 - `network` *String*: A CIDR or IP address.
 
