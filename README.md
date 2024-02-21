@@ -76,7 +76,7 @@ Returns a `parsed` Object which is used internally by this module. It can be use
 `parsed`: `Object`
   - `cidr` String: The CIDR of the network.
   - `version` Number: IP protocol version. Either `4` or `6`.
-  - `prefix` String: The network prefix, e.g. `/64`.
+  - `prefix` String: The network prefix, e.g. `64`.
   - `start` BigInt: Start number of the network.
   - `end` BigInt: End number of the network.
 
