@@ -6,16 +6,15 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "type": "module",
-  "exports": "./index.js",
-  "main": "./index.js",
-  "types": "./index.d.ts",
+  "exports": "index.js",
+  "types": "index.d.ts",
   "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
   "files": [
-    "./index.js",
-    "./index.d.ts"
+    "index.js",
+    "index.d.ts"
   ],
   "dependencies": {
     "ip-bigint": "^8.0.2"
