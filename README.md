@@ -63,7 +63,7 @@ Returns a boolean that indicates whether `networksA` fully contain all `networks
 
 Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs.
 
-`opts`: Options `Object`
+`opts`: *Object*
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
 
@@ -73,7 +73,7 @@ Returns a string or array (depending on input) with a normalized representation.
 
 Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly.
 
-`parsed`: `Object`
+`parsed`: *Object*
   - `cidr` String: The CIDR of the network.
   - `version` Number: IP protocol version. Either `4` or `6`.
   - `prefix` String: The network prefix, e.g. `64`.
