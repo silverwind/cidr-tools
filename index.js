@@ -230,48 +230,57 @@ function formatPart(part, version) {
 }
 
 function mapNets(nets) {
+  const maps = {4: new Map(), 6: new Map()};
+  for (const {start, end, version} of nets) {
+    const dataStart = maps[version].get(start) || {};
+    dataStart.start = dataStart?.start ? (dataStart.start + 1) : 1;
+    maps[version].set(start, dataStart);
+
+    const dataEnd = maps[version].get(end) || {};
+    dataEnd.end = dataEnd?.end ? (dataEnd.end + 1) : 1;
+    maps[version].set(end, dataEnd);
+  }
+
+  console.log("----------------");
+  console.log(Array.from(maps[4].keys()));
+  console.log(Object.keys(mapNetsOld(nets)[4]));
+
+  return maps;
+}
+
+function mapNetsOld(nets) {
   const maps = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
     if (!maps[version][start]) maps[version][start] = {};
     if (!maps[version][end]) maps[version][end] = {};
-
-    if (maps[version][start].start) {
-      maps[version][start].start += 1;
-    } else {
-      maps[version][start].start = 1;
-    }
-
-    if (maps[version][end].end) {
-      maps[version][end].end += 1;
-    } else {
-      maps[version][end].end = 1;
-    }
+    maps[version][start].start = maps[version][start].start ? maps[version][start].start + 1 : 1;
+    maps[version][end].end = maps[version][end].end ? maps[version][end].end + 1 : 1;
   }
   return maps;
 }
 
-function doMerge(maps, v) {
+function doMerge(map, v) {
   let start = null;
   let end = null;
-  const numbers = Object.keys(maps);
+  const numbers = Array.from(map.keys());
   let depth = 0;
   const merged = [];
 
   for (const [index, number] of numbers.entries()) {
-    const marker = maps[number];
+    const marker = map.get(number);
 
     if (start === null && marker.start) {
-      start = BigInt(number);
+      start = number;
     }
     if (marker.end) {
-      end = BigInt(number);
+      end = number;
     }
 
     if (marker.start) depth += marker.start;
     if (marker.end) depth -= marker.end;
 
     const next = numbers[index + 1];
-    if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
+    if (marker.end && depth === 0 && next && ((next - number) > 1n)) {
       // when there is a end and the next part is more than one number away, we cut a part
       for (const sub of subparts({start, end})) {
         merged.push(formatPart(sub, v));
@@ -291,9 +300,9 @@ function doMerge(maps, v) {
 export function mergeCidr(nets) {
   // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
   nets = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
-  const maps = mapNets(nets);
 
-  const merged = {4: [], 6: []};
+  const maps = mapNets(nets);
+  const merged = {};
   for (const v of [4, 6]) {
     merged[v] = doMerge(maps[v], v);
   }

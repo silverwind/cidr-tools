@@ -14,7 +14,7 @@ lint-fix: node_modules
 	npx eslint --color . --fix
 
 .PHONY: test
-test: node_modules lint
+test: node_modules
 	npx vitest
 	npx tsd
 
