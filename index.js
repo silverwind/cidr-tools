@@ -250,7 +250,7 @@ function mapNets(nets) {
   return maps;
 }
 
-function doMerge(maps, v) {
+function doMerge(maps) {
   let start = null;
   let end = null;
   const numbers = Object.keys(maps);
@@ -274,14 +274,14 @@ function doMerge(maps, v) {
     if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
       // when there is a end and the next part is more than one number away, we cut a part
       for (const sub of subparts({start, end})) {
-        merged.push(formatPart(sub, v));
+        merged.push(sub);
       }
       start = null;
       end = null;
     } else if (index === (numbers.length - 1)) {
       // cut the final part
       for (const sub of subparts({start, end})) {
-        merged.push(formatPart(sub, v));
+        merged.push(sub);
       }
     }
   }
@@ -295,7 +295,7 @@ export function mergeCidr(nets) {
 
   const merged = {4: [], 6: []};
   for (const v of [4, 6]) {
-    merged[v] = doMerge(maps[v], v);
+    merged[v] = doMerge(maps[v]).map(part => formatPart(part, v));
   }
 
   return [...merged[4].sort(compare), ...merged[6].sort(compare)];
