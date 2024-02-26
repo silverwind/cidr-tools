@@ -38,27 +38,31 @@ export function parseCidr(str) {
   const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
 
+  let cidr;
   if (cidrVer) {
-    parsed.cidr = str;
+    cidr = str;
     parsed.version = cidrVer;
   } else {
     const version = ipVersion(str);
     if (version) {
-      parsed.cidr = `${str}/${bits[version]}`;
+      cidr = `${str}/${bits[version]}`;
       parsed.version = version;
     } else {
       throw new Error(`Network is not a CIDR or IP: ${str}`);
     }
   }
 
-  const [ip, prefix] = parsed.cidr.split("/");
+  const [ipAndMisc, prefix] = cidr.split("/");
 
   if (!/^[0-9]+$/.test(prefix)) {
     throw new Error(`Network is not a CIDR or IP: ${str}`);
   }
 
+  const {number, version, ipv4mapped, scopeid} = parseIp(ipAndMisc);
+  parsed.ip = stringifyIp({number, version, ipv4mapped, scopeid});
+  parsed.cidr = `${parsed.ip}/${prefix}`;
   parsed.prefix = prefix;
-  const {number, version} = parseIp(ip);
+
   const numBits = bits[version];
   const ipBits = number.toString(2).padStart(numBits, "0");
   const prefixLen = Number(numBits - prefix);

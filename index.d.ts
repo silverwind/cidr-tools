@@ -7,6 +7,7 @@ type Networks = Network | Network[];
 
 type Parsed = {
   cidr: string;
+  ip: string;
   version: number;
   prefix: string;
   start: bigint;

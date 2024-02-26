@@ -172,6 +172,7 @@ test("containsCidr", () => {
 test("parseCidr", () => {
   expect(parseCidr("::/64")).toEqual({
     cidr: "::/64",
+    ip: "::",
     version: 6,
     prefix: "64",
     start: 0n,
@@ -179,6 +180,7 @@ test("parseCidr", () => {
   });
   expect(parseCidr("1.2.3.4/24")).toEqual({
     cidr: "1.2.3.4/24",
+    ip: "1.2.3.4",
     version: 4,
     prefix: "24",
     start: 16909056n,
@@ -186,6 +188,7 @@ test("parseCidr", () => {
   });
   expect(parseCidr("2001:db8::")).toEqual({
     cidr: "2001:db8::/128",
+    ip: "2001:db8::",
     version: 6,
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
@@ -193,6 +196,7 @@ test("parseCidr", () => {
   });
   expect(parseCidr("2001:db8::/128")).toEqual({
     cidr: "2001:db8::/128",
+    ip: "2001:db8::",
     version: 6,
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
@@ -200,6 +204,7 @@ test("parseCidr", () => {
   });
   expect(parseCidr("2001:db8::%eth2")).toEqual({
     cidr: "2001:db8::%eth2/128",
+    ip: "2001:db8::%eth2",
     version: 6,
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
@@ -207,10 +212,19 @@ test("parseCidr", () => {
   });
   expect(parseCidr("2001:db8::%eth2/128")).toEqual({
     cidr: "2001:db8::%eth2/128",
+    ip: "2001:db8::%eth2",
     version: 6,
     prefix: "128",
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
+  });
+  expect(parseCidr("::FFFF:34.90.242.162/80")).toEqual({
+    cidr: "::ffff:34.90.242.162/80",
+    ip: "::ffff:34.90.242.162",
+    version: 6,
+    prefix: "80",
+    start: 0n,
+    end: 281474976710655n,
   });
 
   expect(() => parseCidr("2001:db8::/128%eth2")).toThrow();
