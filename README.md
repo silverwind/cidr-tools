@@ -61,7 +61,7 @@ Returns a boolean that indicates whether `networksA` fully contain all `networks
 
 - `networks` *String* or *Array*: One or more CIDR or IP address.
 
-Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs.
+Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network.
 
 `opts`: *Object*
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.

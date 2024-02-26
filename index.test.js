@@ -82,6 +82,8 @@ test("normalizeCidr", () => {
   expect(normalizeCidr("FF:00:0:0:0:00:0:EE/16")).toEqual("ff::/16");
   expect(normalizeCidr("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
   expect(normalizeCidr("1.2.3.4")).toEqual("1.2.3.4");
+  expect(normalizeCidr("1.2.3.4/24")).toEqual("1.2.3.0/24");
+  expect(normalizeCidr("1.2.3.255/28")).toEqual("1.2.3.240/28");
   expect(normalizeCidr("1.2.3.4/0")).toEqual("0.0.0.0/0");
   expect(normalizeCidr("255.255.255.255/1")).toEqual("128.0.0.0/1");
   expect(normalizeCidr("255.255.255.255/6")).toEqual("252.0.0.0/6");
@@ -93,6 +95,7 @@ test("normalizeCidr", () => {
   expect(normalizeCidr(["1::1"], {compress: false})).toEqual(["1:0:0:0:0:0:0:1"]);
   expect(normalizeCidr(["1::/64"], {compress: false})).toEqual(["1:0:0:0:0:0:0:0/64"]);
   expect(normalizeCidr(["1.2.3.4/0"], {compress: false})).toEqual(["0.0.0.0/0"]);
+  expect(normalizeCidr(["1.2.3.4/24"], {compress: false})).toEqual(["1.2.3.0/24"]);
   expect(normalizeCidr("::FFFF:34.90.242.162", {hexify: true})).toEqual("::ffff:225a:f2a2");
   expect(normalizeCidr("::FFFF:34.90.242.162/64", {hexify: true})).toEqual("::/64");
   expect(normalizeCidr(["::FFFF:34.90.242.162"], {hexify: true})).toEqual(["::ffff:225a:f2a2"]);
