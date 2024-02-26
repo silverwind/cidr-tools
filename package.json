@@ -6,7 +6,7 @@
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "type": "module",
-  "exports": "index.js",
+  "exports": "./index.js",
   "types": "index.d.ts",
   "sideEffects": false,
   "engines": {
