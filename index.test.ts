@@ -1,9 +1,6 @@
 import m, {
   mergeCidr, excludeCidr, expandCidr, overlapCidr, normalizeCidr, containsCidr, parseCidr,
-} from "./index.js";
-import {inspect} from "node:util";
-
-inspect.defaultOptions.depth = null;
+} from "./index.ts";
 
 test("exports", () => {
   expect(m.mergeCidr).toEqual(mergeCidr);

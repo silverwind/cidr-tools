@@ -1,21 +1,54 @@
 import {parseIp, stringifyIp, normalizeIp, ipVersion} from "ip-bigint";
 
 const bits = {4: 32, 6: 128};
-const uniq = arr => Array.from(new Set(arr));
-const cidrVersion = cidr => cidr.includes("/") ? ipVersion(cidr) : 0;
+
+type IPv4Address = string;
+type IPv6Address = string;
+type IPv4CIDR = string;
+type IPv6CIDR = string;
+type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
+type Networks = Network | Network[];
+type IpVersion = 4 | 6 | 0;
+
+type ParsedCidr = {
+  cidr: string;
+  ip: string;
+  version: IpVersion;
+  prefix: string;
+  start: bigint;
+  end: bigint;
+};
+
+type NormalizeOpts = {
+  compress?: boolean;
+  hexify?: boolean;
+};
+
+type Part = {
+  start: bigint,
+  end: bigint,
+}
+
+function uniq(arr: any[]): any[] {
+  return Array.from(new Set(arr));
+}
+
+function cidrVersion(cidr: Network): IpVersion {
+  return cidr.includes("/") ? ipVersion(cidr) : 0;
+}
 
 // TODO: pass parsed objects in here
-function compare(a, b) {
+function compare(a: Network, b: Network) {
   const {number: aNum, version: aVersion} = parseIp(a.replace(/\/.+/, ""));
   const {number: bNum, version: bVersion} = parseIp(b.replace(/\/.+/, ""));
   if (aVersion === bVersion) {
     return aNum - bNum > 0n ? 1 : aNum - bNum < 0n ? -1 : 0;
   } else {
-    return aVersion > bVersion;
+    return aVersion > bVersion ? 1 : 0;
   }
 }
 
-function doNormalize(cidr, {compress = true, hexify = false} = {}) {
+function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
   const {start, end, prefix, version} = parseCidr(cidr);
   if (start !== end) { // cidr
     // set network address to first address
@@ -26,15 +59,15 @@ function doNormalize(cidr, {compress = true, hexify = false} = {}) {
   }
 }
 
-export function normalizeCidr(cidr, {compress = true, hexify = false} = {}) {
+export function normalizeCidr(cidr: Networks, {compress = true, hexify = false}: NormalizeOpts = {}): Networks {
   if (Array.isArray(cidr)) {
-    return cidr.map(entry => normalizeCidr(entry, {compress, hexify}));
+    return cidr.map(entry => normalizeCidr(entry, {compress, hexify})) as Network[];
   } else {
     return doNormalize(cidr, {compress, hexify});
   }
 }
 
-export function parseCidr(str) {
+export function parseCidr(str: Network): ParsedCidr {
   const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
 
@@ -52,7 +85,7 @@ export function parseCidr(str) {
     }
   }
 
-  const [ipAndMisc, prefix] = cidr.split("/");
+  const [ipAndMisc, prefix]: [string, string] = cidr.split("/");
 
   if (!/^[0-9]+$/.test(prefix)) {
     throw new Error(`Network is not a CIDR or IP: ${str}`);
@@ -65,7 +98,7 @@ export function parseCidr(str) {
 
   const numBits = bits[version];
   const ipBits = number.toString(2).padStart(numBits, "0");
-  const prefixLen = Number(numBits - prefix);
+  const prefixLen = Number(numBits - Number(prefix));
   const startBits = ipBits.substring(0, numBits - prefixLen);
   parsed.start = BigInt(`0b${startBits}${"0".repeat(prefixLen)}`);
   parsed.end = BigInt(`0b${startBits}${"1".repeat(prefixLen)}`);
@@ -73,7 +106,7 @@ export function parseCidr(str) {
 }
 
 // returns whether networks fully or partially overlap
-function doNetsOverlap(a, b) {
+function doNetsOverlap(a: ParsedCidr, b: ParsedCidr) {
   //    aaa
   // bbb
   if (a.start > b.end) return false; // a starts after b
@@ -86,7 +119,7 @@ function doNetsOverlap(a, b) {
 }
 
 // returns whether network a fully contains network b;
-function netContains(a, b) {
+function netContains(a: ParsedCidr, b: ParsedCidr) {
   //  aaa
   // bbbb
   if (b.start < a.start) return false; // a starts after b
@@ -99,8 +132,8 @@ function netContains(a, b) {
 }
 
 // exclude b from a and return remainder cidrs
-function excludeNets(a, b, v) {
-  const parts = [];
+function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion) {
+  const parts: Part[] = [];
 
   // compareTo returns negative if left is less than right
 
@@ -159,12 +192,12 @@ function excludeNets(a, b, v) {
   return mergeCidr(remaining);
 }
 
-function biggestPowerOfTwo(num) {
+function biggestPowerOfTwo(num: bigint) {
   if (num === 0n) return 0n;
   return 2n ** BigInt(String(num.toString(2).length - 1));
 }
 
-function subparts(part) {
+function subparts(part: Part): Part[] {
   // special case for when part is length 1
   if ((part.end - part.start) === 1n) {
     if (part.end % 2n === 0n) {
@@ -219,21 +252,24 @@ function subparts(part) {
   return parts;
 }
 
-function diff(a, b) {
-  if (typeof a !== "bigint") a = BigInt(a);
-  if (typeof b !== "bigint") b = BigInt(b);
+function diff(a: bigint, b: bigint) {
   a += 1n;
   return a - b;
 }
 
-function formatPart(part, version) {
+function formatPart(part: Part, version: IpVersion) {
   const ip = normalizeCidr(stringifyIp({number: BigInt(part.start.toString()), version}));
   const zeroes = diff(part.end, part.start).toString(2);
   const prefix = bits[version] - (zeroes.match(/0/g) || []).length;
-  return `${ip}/${prefix}`;
+  return `${ip as Network}/${prefix}`;
 }
 
-function mapNets(nets) {
+type NetMap = {
+  4: {[num: string]: number},
+  6: {[num: string]: number},
+}
+
+function mapNets(nets: ParsedCidr[]): NetMap {
   const maps = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
     if (!maps[version][start]) maps[version][start] = {};
@@ -254,7 +290,7 @@ function mapNets(nets) {
   return maps;
 }
 
-function doMerge(maps) {
+function doMerge(maps: NetMap) {
   let start = null;
   let end = null;
   const numbers = Object.keys(maps);
@@ -292,20 +328,20 @@ function doMerge(maps) {
   return merged;
 }
 
-export function mergeCidr(nets) {
+export function mergeCidr(nets: Networks): Network[] {
   // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
-  nets = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
-  const maps = mapNets(nets);
+  const arr: ParsedCidr[] = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
+  const maps = mapNets(arr);
 
   const merged = {4: [], 6: []};
-  for (const v of [4, 6]) {
+  for (const v of [4, 6] as IpVersion[]) {
     merged[v] = doMerge(maps[v]).map(part => formatPart(part, v));
   }
 
   return [...merged[4].sort(compare), ...merged[6].sort(compare)];
 }
 
-export function excludeCidr(basenets, exclnets) {
+export function excludeCidr(basenets: Networks, exclnets: Networks) {
   basenets = uniq(Array.isArray(basenets) ? basenets : [basenets]);
   exclnets = uniq(Array.isArray(exclnets) ? exclnets : [exclnets]);
 
@@ -323,7 +359,7 @@ export function excludeCidr(basenets, exclnets) {
     excls[cidrVersion(exclnet)].push(exclnet);
   }
 
-  for (const v of [4, 6]) {
+  for (const v of [4, 6] as IpVersion[]) {
     for (const exclcidr of excls[v]) {
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parseCidr(basecidr);
@@ -340,20 +376,20 @@ export function excludeCidr(basenets, exclnets) {
   return bases[4].concat(bases[6]).sort(compare);
 }
 
-export function expandCidr(nets) {
+export function expandCidr(nets: Networks) {
   nets = uniq(Array.isArray(nets) ? nets : [nets]);
 
-  const ips = [];
+  const ips: Network[] = [];
   for (const net of mergeCidr(nets)) {
     const {start, end, version} = parseCidr(net);
     for (let number = start; number <= end; number++) {
       ips.push(stringifyIp({number, version}));
     }
   }
-  return ips.map(normalizeCidr);
+  return ips.map(ip => normalizeCidr(ip));
 }
 
-export function overlapCidr(a, b) {
+export function overlapCidr(a: Networks, b: Networks) {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 
@@ -376,7 +412,7 @@ export function overlapCidr(a, b) {
   return false;
 }
 
-export function containsCidr(a, b) {
+export function containsCidr(a: Networks, b: Networks) {
   const aNets = uniq(Array.isArray(a) ? a : [a]);
   const bNets = uniq(Array.isArray(b) ? b : [b]);
 

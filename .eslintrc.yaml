@@ -1,2 +1,4 @@
 root: true
-extends: silverwind
+extends:
+  - silverwind
+  - silverwind-typescript
