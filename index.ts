@@ -10,11 +10,12 @@ type CIDR = string;
 type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
 type Networks = Network | Network[];
 type IpVersion = 4 | 6 | 0;
+type ValidIpVersion = 4 | 6;
 
 type ParsedCidr = {
   cidr: string;
   ip: string;
-  version: IpVersion;
+  version: ValidIpVersion;
   prefix: string;
   start: bigint;
   end: bigint;
@@ -86,7 +87,7 @@ export function parseCidr(str: Network): ParsedCidr {
     }
   }
 
-  const [ipAndMisc, prefix]: [string, string] = cidr.split("/");
+  const [ipAndMisc, prefix]: string[] = cidr.split("/");
 
   if (!/^[0-9]+$/.test(prefix)) {
     throw new Error(`Network is not a CIDR or IP: ${str}`);
@@ -97,7 +98,7 @@ export function parseCidr(str: Network): ParsedCidr {
   parsed.cidr = `${parsed.ip}/${prefix}`;
   parsed.prefix = prefix;
 
-  const numBits = bits[version];
+  const numBits = bits[version as ValidIpVersion];
   const ipBits = number.toString(2).padStart(numBits, "0");
   const prefixLen = Number(numBits - Number(prefix));
   const startBits = ipBits.substring(0, numBits - prefixLen);
@@ -211,7 +212,8 @@ function subparts(part: Part): Part[] {
   const size = diff(part.end, part.start);
   let biggest = biggestPowerOfTwo(size);
 
-  let start, end;
+  let start: bigint;
+  let end: bigint;
   if (size === biggest && part.start + size === part.end) {
     return [part];
   } else if (part.start % biggest === 0n) {
@@ -261,31 +263,31 @@ function diff(a: bigint, b: bigint) {
 function formatPart(part: Part, version: IpVersion): CIDR {
   const ip = normalizeCidr(stringifyIp({number: BigInt(part.start.toString()), version}));
   const zeroes = diff(part.end, part.start).toString(2);
-  const prefix = bits[version] - (zeroes.match(/0/g) || []).length;
+  const prefix = bits[version as ValidIpVersion] - (zeroes.match(/0/g) || []).length;
   return `${ip as Network}/${prefix}`;
 }
 
 type NetMap = {
-  4: {[num: string]: number},
-  6: {[num: string]: number},
+  4: {[num: string]: {start?: number, end?: number}},
+  6: {[num: string]: {start?: number, end?: number}},
 }
 
 function mapNets(nets: ParsedCidr[]): NetMap {
-  const maps = {4: {}, 6: {}}; // TODO: use Map with BigInt key
+  const maps: NetMap = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
-    if (!maps[version][start]) maps[version][start] = {};
-    if (!maps[version][end]) maps[version][end] = {};
+    if (!maps[version][String(start)]) maps[version][String(start)] = {};
+    if (!maps[version][String(end)]) maps[version][String(end)] = {};
 
-    if (maps[version][start].start) {
-      maps[version][start].start += 1;
+    if (maps[version][String(start)].start) {
+      maps[version][String(start)].start += 1;
     } else {
-      maps[version][start].start = 1;
+      maps[version][String(start)].start = 1;
     }
 
-    if (maps[version][end].end) {
-      maps[version][end].end += 1;
+    if (maps[version][String(end)].end) {
+      maps[version][String(end)].end += 1;
     } else {
-      maps[version][end].end = 1;
+      maps[version][String(end)].end = 1;
     }
   }
   return maps;
@@ -299,7 +301,7 @@ function doMerge(maps: NetMap): Part[] {
   const merged: Part[] = [];
 
   for (const [index, number] of numbers.entries()) {
-    const marker = maps[number];
+    const marker = maps[String(number)];
 
     if (start === null && marker.start) {
       start = BigInt(number);
