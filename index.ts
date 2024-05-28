@@ -31,8 +31,8 @@ type Part = {
   end: bigint,
 }
 
-function uniq(arr: any[]): any[] {
-  return Array.from(new Set(arr));
+function uniq<T extends any[]>(arr: T): T {
+  return Array.from(new Set(arr)) as T;
 }
 
 function cidrVersion(cidr: Network): IpVersion {
