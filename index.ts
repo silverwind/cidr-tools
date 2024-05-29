@@ -61,11 +61,13 @@ function doNormalize(cidr: Network, {compress = true, hexify = false}: Normalize
   }
 }
 
-export function normalizeCidr(cidr: Networks, {compress = true, hexify = false}: NormalizeOpts = {}): Networks {
+export function normalizeCidr(cidr: Network, opts?: NormalizeOpts): Network;
+export function normalizeCidr(cidr: Network[], opts?: NormalizeOpts): Network[];
+export function normalizeCidr(cidr: Networks, opts?: NormalizeOpts): Networks {
   if (Array.isArray(cidr)) {
-    return cidr.map(entry => normalizeCidr(entry, {compress, hexify})) as Network[];
+    return cidr.map(entry => normalizeCidr(entry, opts));
   } else {
-    return doNormalize(cidr, {compress, hexify});
+    return doNormalize(cidr, opts);
   }
 }
 
@@ -264,7 +266,7 @@ function formatPart(part: Part, version: IpVersion): CIDR {
   const ip = normalizeCidr(stringifyIp({number: BigInt(part.start.toString()), version}));
   const zeroes = diff(part.end, part.start).toString(2);
   const prefix = bits[version as ValidIpVersion] - (zeroes.match(/0/g) || []).length;
-  return `${ip as Network}/${prefix}`;
+  return `${ip}/${prefix}`;
 }
 
 type NetMap = {
