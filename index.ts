@@ -269,9 +269,11 @@ function formatPart(part: Part, version: IpVersion): CIDR {
   return `${ip}/${prefix}`;
 }
 
+type NetMapObj = {[num: string]: {start?: number, end?: number}};
+
 type NetMap = {
-  4: {[num: string]: {start?: number, end?: number}},
-  6: {[num: string]: {start?: number, end?: number}},
+  4: NetMapObj,
+  6: NetMapObj,
 }
 
 function mapNets(nets: ParsedCidr[]): NetMap {
@@ -295,7 +297,7 @@ function mapNets(nets: ParsedCidr[]): NetMap {
   return maps;
 }
 
-function doMerge(maps: NetMap): Part[] {
+function doMerge(maps: NetMapObj): Part[] {
   let start = null;
   let end = null;
   const numbers = Object.keys(maps);
@@ -333,7 +335,7 @@ function doMerge(maps: NetMap): Part[] {
   return merged;
 }
 
-type NetParts = {
+type CidrsByVersion = {
   4: [...cidr: CIDR[]],
   6: [...cidr: CIDR[]],
 }
@@ -343,8 +345,8 @@ export function mergeCidr(nets: Networks): Network[] {
   const arr: ParsedCidr[] = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
   const maps = mapNets(arr);
 
-  const merged: NetParts = {4: [], 6: []};
-  for (const v of [4, 6] as IpVersion[]) {
+  const merged: CidrsByVersion = {4: [], 6: []};
+  for (const v of [4, 6] as ValidIpVersion[]) {
     merged[v] = doMerge(maps[v]).map(part => formatPart(part, v));
   }
 
@@ -355,18 +357,20 @@ export function excludeCidr(base: Networks, excl: Networks) {
   const basenets: Network[] = mergeCidr(uniq(Array.isArray(base) ? base : [base]));
   const exclnets: Network[] = mergeCidr(uniq(Array.isArray(excl) ? excl : [excl]));
 
-  const bases = {4: [], 6: []};
-  const excls = {4: [], 6: []};
+  const bases: CidrsByVersion = {4: [], 6: []};
+  const excls: CidrsByVersion = {4: [], 6: []};
 
   for (const basenet of basenets) {
-    bases[cidrVersion(basenet)].push(basenet);
+    const version = cidrVersion(basenet);
+    if (version) bases[version].push(basenet);
   }
 
   for (const exclnet of exclnets) {
-    excls[cidrVersion(exclnet)].push(exclnet);
+    const version = cidrVersion(exclnet);
+    if (version) excls[version].push(exclnet);
   }
 
-  for (const v of [4, 6] as IpVersion[]) {
+  for (const v of [4, 6] as ValidIpVersion[]) {
     for (const exclcidr of excls[v]) {
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parseCidr(basecidr);
