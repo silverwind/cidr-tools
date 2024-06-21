@@ -269,7 +269,12 @@ function formatPart(part: Part, version: IpVersion): CIDR {
   return `${ip}/${prefix}`;
 }
 
-type NetMapObj = {[num: string]: {start?: number, end?: number}};
+type NetMapObj = {
+  [num: string]: {
+    start: number,
+    end: number,
+  },
+};
 
 type NetMap = {
   4: NetMapObj,
@@ -279,20 +284,10 @@ type NetMap = {
 function mapNets(nets: ParsedCidr[]): NetMap {
   const maps: NetMap = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
-    if (!maps[version][String(start)]) maps[version][String(start)] = {};
-    if (!maps[version][String(end)]) maps[version][String(end)] = {};
-
-    if (maps[version][String(start)].start) {
-      maps[version][String(start)].start += 1;
-    } else {
-      maps[version][String(start)].start = 1;
-    }
-
-    if (maps[version][String(end)].end) {
-      maps[version][String(end)].end += 1;
-    } else {
-      maps[version][String(end)].end = 1;
-    }
+    if (!maps[version][String(start)]) maps[version][String(start)] = {start: 0, end: 0};
+    if (!maps[version][String(end)]) maps[version][String(end)] = {start: 0, end: 0};
+    maps[version][String(start)].start += 1;
+    maps[version][String(end)].end += 1;
   }
   return maps;
 }
@@ -307,12 +302,9 @@ function doMerge(maps: NetMapObj): Part[] {
   for (const [index, number] of numbers.entries()) {
     const marker = maps[String(number)];
 
-    if (start === null && marker.start) {
-      start = BigInt(number);
-    }
-    if (marker.end) {
-      end = BigInt(number);
-    }
+    if (start === null && marker.start) start = BigInt(number);
+    if (marker.end) end = BigInt(number);
+    if (start === null) continue;
 
     if (marker.start) depth += marker.start;
     if (marker.end) depth -= marker.end;
@@ -320,6 +312,7 @@ function doMerge(maps: NetMapObj): Part[] {
     const next = numbers[index + 1];
     if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
       // when there is a end and the next part is more than one number away, we cut a part
+      // @ts-expect-error
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
@@ -327,6 +320,7 @@ function doMerge(maps: NetMapObj): Part[] {
       end = null;
     } else if (index === (numbers.length - 1)) {
       // cut the final part
+      // @ts-expect-error
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
