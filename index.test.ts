@@ -1,15 +1,15 @@
-import m, {
+import cidrTools, {
   mergeCidr, excludeCidr, expandCidr, overlapCidr, normalizeCidr, containsCidr, parseCidr,
 } from "./index.ts";
 
 test("exports", () => {
-  expect(m.mergeCidr).toEqual(mergeCidr);
-  expect(m.excludeCidr).toEqual(excludeCidr);
-  expect(m.expandCidr).toEqual(expandCidr);
-  expect(m.overlapCidr).toEqual(overlapCidr);
-  expect(m.containsCidr).toEqual(containsCidr);
-  expect(m.normalizeCidr).toEqual(normalizeCidr);
-  expect(m.parseCidr).toEqual(parseCidr);
+  expect(cidrTools.mergeCidr).toEqual(mergeCidr);
+  expect(cidrTools.excludeCidr).toEqual(excludeCidr);
+  expect(cidrTools.expandCidr).toEqual(expandCidr);
+  expect(cidrTools.overlapCidr).toEqual(overlapCidr);
+  expect(cidrTools.containsCidr).toEqual(containsCidr);
+  expect(cidrTools.normalizeCidr).toEqual(normalizeCidr);
+  expect(cidrTools.parseCidr).toEqual(parseCidr);
 });
 
 test("mergeCidr", () => {
@@ -71,6 +71,11 @@ test("overlapCidr", () => {
 
 test("normalizeCidr", () => {
   expect(normalizeCidr("::0")).toEqual("::");
+  expect(normalizeCidr("::0/0")).toEqual("::/0");
+  expect(normalizeCidr("::0/128")).toEqual("::/128");
+  expect(normalizeCidr("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")).toEqual("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
+  expect(normalizeCidr("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/0")).toEqual("::/0");
+  expect(normalizeCidr("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128")).toEqual("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128");
   expect(normalizeCidr("::FF")).toEqual("::ff");
   expect(normalizeCidr("::FF/2")).toEqual("::/2");
   expect(normalizeCidr("0:0:0:0:0:0:0:0")).toEqual("::");
@@ -78,6 +83,12 @@ test("normalizeCidr", () => {
   expect(normalizeCidr("0:0:0:0:0:FF:0:0/16")).toEqual("::/16");
   expect(normalizeCidr("FF:00:0:0:0:00:0:EE/16")).toEqual("ff::/16");
   expect(normalizeCidr("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
+  expect(normalizeCidr("0.0.0.0")).toEqual("0.0.0.0");
+  expect(normalizeCidr("0.0.0.0/0")).toEqual("0.0.0.0/0");
+  expect(normalizeCidr("0.0.0.0/32")).toEqual("0.0.0.0/32");
+  expect(normalizeCidr("255.255.255.255")).toEqual("255.255.255.255");
+  expect(normalizeCidr("255.255.255.255/0")).toEqual("0.0.0.0/0");
+  expect(normalizeCidr("255.255.255.255/32")).toEqual("255.255.255.255/32");
   expect(normalizeCidr("1.2.3.4")).toEqual("1.2.3.4");
   expect(normalizeCidr("1.2.3.4/24")).toEqual("1.2.3.0/24");
   expect(normalizeCidr("1.2.3.4/32")).toEqual("1.2.3.4/32");
