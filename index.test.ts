@@ -80,6 +80,7 @@ test("normalizeCidr", () => {
   expect(normalizeCidr("0:0:0:0:0:0:0:0/0")).toEqual("::/0");
   expect(normalizeCidr("1.2.3.4")).toEqual("1.2.3.4");
   expect(normalizeCidr("1.2.3.4/24")).toEqual("1.2.3.0/24");
+  expect(normalizeCidr("1.2.3.4/32")).toEqual("1.2.3.4/32");
   expect(normalizeCidr("1.2.3.255/28")).toEqual("1.2.3.240/28");
   expect(normalizeCidr("1.2.3.4/0")).toEqual("0.0.0.0/0");
   expect(normalizeCidr("255.255.255.255/1")).toEqual("128.0.0.0/1");
@@ -88,6 +89,7 @@ test("normalizeCidr", () => {
   expect(normalizeCidr("::0001")).toEqual("::1");
   expect(normalizeCidr("::FFFF:34.90.242.162")).toEqual("::ffff:34.90.242.162");
   expect(normalizeCidr("::1", {compress: false})).toEqual("0:0:0:0:0:0:0:1");
+  expect(normalizeCidr("::1/128", {compress: false})).toEqual("0:0:0:0:0:0:0:1/128");
   expect(normalizeCidr("1::1", {compress: false})).toEqual("1:0:0:0:0:0:0:1");
   expect(normalizeCidr(["1::1"], {compress: false})).toEqual(["1:0:0:0:0:0:0:1"]);
   expect(normalizeCidr(["1::/64"], {compress: false})).toEqual(["1:0:0:0:0:0:0:0/64"]);
@@ -172,6 +174,7 @@ test("parseCidr", () => {
     ip: "::",
     version: 6,
     prefix: "64",
+    prefixPresent: true,
     start: 0n,
     end: 18446744073709551615n,
   });
@@ -180,6 +183,7 @@ test("parseCidr", () => {
     ip: "1.2.3.4",
     version: 4,
     prefix: "24",
+    prefixPresent: true,
     start: 16909056n,
     end: 16909311n,
   });
@@ -188,6 +192,7 @@ test("parseCidr", () => {
     ip: "2001:db8::",
     version: 6,
     prefix: "128",
+    prefixPresent: false,
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
   });
@@ -196,6 +201,7 @@ test("parseCidr", () => {
     ip: "2001:db8::",
     version: 6,
     prefix: "128",
+    prefixPresent: true,
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
   });
@@ -204,6 +210,7 @@ test("parseCidr", () => {
     ip: "2001:db8::%eth2",
     version: 6,
     prefix: "128",
+    prefixPresent: false,
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
   });
@@ -212,6 +219,7 @@ test("parseCidr", () => {
     ip: "2001:db8::%eth2",
     version: 6,
     prefix: "128",
+    prefixPresent: true,
     start: 42540766411282592856903984951653826560n,
     end: 42540766411282592856903984951653826560n,
   });
@@ -220,8 +228,18 @@ test("parseCidr", () => {
     ip: "::ffff:34.90.242.162",
     version: 6,
     prefix: "80",
+    prefixPresent: true,
     start: 0n,
     end: 281474976710655n,
+  });
+  expect(parseCidr("1.2.3.4/32")).toEqual({
+    cidr: "1.2.3.4/32",
+    ip: "1.2.3.4",
+    version: 4,
+    prefix: "32",
+    prefixPresent: true,
+    start: 16909060n,
+    end: 16909060n,
   });
 
   expect(() => parseCidr("2001:db8::/128%eth2")).toThrow();

@@ -17,6 +17,7 @@ type ParsedCidr = {
   ip: string;
   version: ValidIpVersion;
   prefix: string;
+  prefixPresent: boolean;
   start: bigint;
   end: bigint;
 };
@@ -51,8 +52,8 @@ function compare(a: Network, b: Network): number {
 }
 
 function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
-  const {start, end, prefix, version} = parseCidr(cidr);
-  if (start !== end) { // cidr
+  const {start, end, prefix, version, prefixPresent} = parseCidr(cidr);
+  if (start !== end || prefixPresent) { // cidr
     // set network address to first address
     const ip = normalizeIp(stringifyIp({number: start, version}), {compress, hexify});
     return `${ip}/${prefix}`;
@@ -75,7 +76,7 @@ export function parseCidr(str: Network): ParsedCidr {
   const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
 
-  let cidr;
+  let cidr: string;
   if (cidrVer) {
     cidr = str;
     parsed.version = cidrVer;
@@ -99,6 +100,7 @@ export function parseCidr(str: Network): ParsedCidr {
   parsed.ip = stringifyIp({number, version, ipv4mapped, scopeid});
   parsed.cidr = `${parsed.ip}/${prefix}`;
   parsed.prefix = prefix;
+  parsed.prefixPresent = Boolean(cidrVer);
 
   const numBits = bits[version as ValidIpVersion];
   const ipBits = number.toString(2).padStart(numBits, "0");

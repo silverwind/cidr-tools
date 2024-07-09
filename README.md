@@ -78,6 +78,7 @@ Returns a `parsed` Object which is used internally by this module. It can be use
   - `ip` String: The IP address inside the CIDR, including any `%scopeid` if present.
   - `version` Number: IP protocol version. Either `4` or `6`.
   - `prefix` String: The network prefix, e.g. `64`.
+  - `prefixPresent` Boolean: Whether the passed string has a network prefix.
   - `start` BigInt: Start number of the network.
   - `end` BigInt: End number of the network.
 
