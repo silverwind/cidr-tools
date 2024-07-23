@@ -17,19 +17,19 @@
     "node": ">=18"
   },
   "dependencies": {
-    "ip-bigint": "^8.1.1"
+    "ip-bigint": "^8.2.0"
   },
   "devDependencies": {
-    "@types/node": "20.14.10",
+    "@types/node": "20.14.11",
     "eslint": "8.57.0",
-    "eslint-config-silverwind": "88.2.4",
-    "eslint-config-silverwind-typescript": "5.1.3",
+    "eslint-config-silverwind": "89.0.1",
+    "eslint-config-silverwind-typescript": "6.0.4",
     "typescript-config-silverwind": "5.1.3",
     "updates": "16.2.1",
     "versions": "12.1.2",
-    "vite": "5.3.3",
+    "vite": "5.3.4",
     "vite-config-silverwind": "3.0.0",
-    "vitest": "2.0.1",
+    "vitest": "2.0.4",
     "vitest-config-silverwind": "9.1.0"
   }
 }
