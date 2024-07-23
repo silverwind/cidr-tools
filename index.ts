@@ -260,8 +260,7 @@ function subparts(part: Part): Part[] {
 }
 
 function diff(a: bigint, b: bigint): bigint {
-  a += 1n;
-  return a - b;
+  return a + 1n - b;
 }
 
 function formatPart(part: Part, version: IpVersion): CIDR {
