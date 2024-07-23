@@ -112,7 +112,7 @@ export function parseCidr(str: Network): ParsedCidr {
 }
 
 // returns whether networks fully or partially overlap
-function doNetsOverlap(a: ParsedCidr, b: ParsedCidr) {
+function doNetsOverlap(a: ParsedCidr, b: ParsedCidr): boolean {
   //    aaa
   // bbb
   if (a.start > b.end) return false; // a starts after b
@@ -125,7 +125,7 @@ function doNetsOverlap(a: ParsedCidr, b: ParsedCidr) {
 }
 
 // returns whether network a fully contains network b;
-function netContains(a: ParsedCidr, b: ParsedCidr) {
+function netContains(a: ParsedCidr, b: ParsedCidr): boolean {
   //  aaa
   // bbbb
   if (b.start < a.start) return false; // a starts after b
@@ -259,7 +259,7 @@ function subparts(part: Part): Part[] {
   return parts;
 }
 
-function diff(a: bigint, b: bigint) {
+function diff(a: bigint, b: bigint): bigint {
   a += 1n;
   return a - b;
 }
@@ -349,7 +349,7 @@ export function mergeCidr(nets: Networks): Network[] {
   return [...merged[4].sort(compare), ...merged[6].sort(compare)];
 }
 
-export function excludeCidr(base: Networks, excl: Networks) {
+export function excludeCidr(base: Networks, excl: Networks): Network[] {
   const basenets: Network[] = mergeCidr(uniq(Array.isArray(base) ? base : [base]));
   const exclnets: Network[] = mergeCidr(uniq(Array.isArray(excl) ? excl : [excl]));
 
@@ -383,7 +383,7 @@ export function excludeCidr(base: Networks, excl: Networks) {
   return bases[4].concat(bases[6]).sort(compare);
 }
 
-export function expandCidr(nets: Networks) {
+export function expandCidr(nets: Networks): Network[] {
   const arr: Network[] = uniq(Array.isArray(nets) ? nets : [nets]);
   const ips: Network[] = [];
 
@@ -396,7 +396,7 @@ export function expandCidr(nets: Networks) {
   return ips.map(ip => normalizeCidr(ip));
 }
 
-export function overlapCidr(a: Networks, b: Networks) {
+export function overlapCidr(a: Networks, b: Networks): boolean {
   const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
   const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
 
@@ -419,7 +419,7 @@ export function overlapCidr(a: Networks, b: Networks) {
   return false;
 }
 
-export function containsCidr(a: Networks, b: Networks) {
+export function containsCidr(a: Networks, b: Networks): boolean {
   const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
   const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
 
