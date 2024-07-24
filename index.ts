@@ -382,17 +382,15 @@ export function excludeCidr(base: Networks, excl: Networks): Network[] {
   return bases[4].concat(bases[6]).sort(compare);
 }
 
-export function expandCidr(nets: Networks): Network[] {
+export function* expandCidr(nets: Networks): Generator<Network> {
   const arr: Network[] = uniq(Array.isArray(nets) ? nets : [nets]);
-  const ips: Network[] = [];
 
   for (const net of mergeCidr(arr)) {
     const {start, end, version} = parseCidr(net);
     for (let number = start; number <= end; number++) {
-      ips.push(stringifyIp({number, version}));
+      yield normalizeCidr(stringifyIp({number, version}));
     }
   }
-  return ips.map(ip => normalizeCidr(ip));
 }
 
 export function overlapCidr(a: Networks, b: Networks): boolean {

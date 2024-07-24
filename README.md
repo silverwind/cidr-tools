@@ -7,13 +7,26 @@
 ```js
 import {mergeCidr, excludeCidr, expandCidr, overlapCidr, containsCidr, normalizeCidr, parseCidr} from "cidr-tools";
 
-mergeCidr(["1.0.0.0/24", "1.0.1.0/24"]); //=> ["1.0.0.0/23"]
-excludeCidr(["::1/127"], "::1/128") //=> ["::/128"]
-expandCidr(["2001:db8::/126"]) //=> ["2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"]
-overlapCidr("1.0.0.0/24", "1.0.0.128/25") //=> true
-containsCidr(["1.0.0.0/24", "2.0.0.0/24"], "1.0.0.1") //=> true
-normalizeCidr("::ffff/64") //=> "::/64"
-parseCidr("::/64"); // => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
+mergeCidr(["1.0.0.0/24", "1.0.1.0/24"]);
+//=> ["1.0.0.0/23"]
+
+excludeCidr(["::1/127"], "::1/128");
+//=> ["::/128"]
+
+Array.from(expandCidr(["2001:db8::/126"]));
+//=> ["2001:db8::", "2001:db8::1", "2001:db8::2", "2001:db8::3"]
+
+overlapCidr("1.0.0.0/24", "1.0.0.128/25");
+//=> true
+
+containsCidr(["1.0.0.0/24", "2.0.0.0/24"], "1.0.0.1");
+//=> true
+
+normalizeCidr("::ffff/64");
+//=> "::/64"
+
+parseCidr("::/64");
+// => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
 ```
 
 ## API
@@ -41,7 +54,7 @@ Returns an array of merged remaining networks.
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
-Returns an array of individual IPs contained in the networks.
+Returns a generator for individual IPs contained in the networks. Be aware that asking for expansions of big networks can result in long runtimes and possibly high memory usage. One million IPs takes about 2 seconds on modern hardware.
 
 ### overlapCidr(networksA, networksB)
 

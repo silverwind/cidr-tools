@@ -50,10 +50,10 @@ test("excludeCidr", () => {
 });
 
 test("expandCidr", () => {
-  expect(expandCidr(["1.2.3.0/31"])).toEqual(["1.2.3.0", "1.2.3.1"]);
-  expect(expandCidr(["1::/126"])).toEqual(["1::", "1::1", "1::2", "1::3"]);
-  expect(expandCidr(["2008:db1::/127"])).toEqual(["2008:db1::", "2008:db1::1"]);
-  expect(expandCidr("2008:db1::/127")).toEqual(["2008:db1::", "2008:db1::1"]);
+  expect(Array.from(expandCidr(["1.2.3.0/31"]))).toEqual(["1.2.3.0", "1.2.3.1"]);
+  expect(Array.from(expandCidr(["1::/126"]))).toEqual(["1::", "1::1", "1::2", "1::3"]);
+  expect(Array.from(expandCidr(["2008:db1::/127"]))).toEqual(["2008:db1::", "2008:db1::1"]);
+  expect(Array.from(expandCidr("2008:db1::/127"))).toEqual(["2008:db1::", "2008:db1::1"]);
 });
 
 test("overlapCidr", () => {
