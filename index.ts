@@ -62,12 +62,12 @@ function doNormalize(cidr: Network, {compress = true, hexify = false}: Normalize
   }
 }
 
-export function normalizeCidr(cidr: Network, opts?: NormalizeOpts): Network;
-export function normalizeCidr(cidr: Network[], opts?: NormalizeOpts): Network[];
-export function normalizeCidr(cidr: Networks, opts?: NormalizeOpts): Networks {
+export function normalizeCidr<T extends Network | Network[]>(cidr: T, opts?: NormalizeOpts): T {
   if (Array.isArray(cidr)) {
+    // @ts-expect-error - better than using overload
     return cidr.map(entry => normalizeCidr(entry, opts));
   } else {
+    // @ts-expect-error - better than using overload
     return doNormalize(cidr, opts);
   }
 }
