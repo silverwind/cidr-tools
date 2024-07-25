@@ -54,7 +54,16 @@ Returns an array of merged remaining networks.
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
-Returns a generator for individual IPs contained in the networks. Be aware that asking for expansions of big networks can result in long runtimes and possibly high memory usage. One million IPs takes about 2 seconds on modern hardware.
+Returns a generator for individual IPs contained in the networks.
+
+Be aware that passing large networks that contain millions of IPs can result in memory exhaustion and slow execution time. It's recommended to validate the amount of IPs first, for example, like this:
+
+```js
+const {start, end} = parseCidr(net);
+if (end - start >= 1000000n) {
+  throw new Error("Too many IPs");
+}
+```
 
 ### overlapCidr(networksA, networksB)
 
