@@ -59,7 +59,9 @@ Returns a generator for individual IPs contained in the networks.
 Be aware that passing large networks that contain millions of IPs can result in memory exhaustion and slow execution time. It's recommended to validate the amount of IPs first, for example, like this:
 
 ```js
-const {start, end} = parseCidr(net);
+import {parseCidr} from "cidr-tools";
+
+const {start, end} = parseCidr("1.2.3.4/2");
 if (end - start >= 1000000n) {
   throw new Error("Too many IPs");
 }
