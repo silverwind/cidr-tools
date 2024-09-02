@@ -48,7 +48,7 @@ Returns an array of merged networks.
 - `baseNetworks` *String* or *Array*: One or more CIDR or IP addresses.
 - `excludeNetworks` *String* or *Array*: One or more CIDR or IP addresses to exclude from `baseNetworks`.
 
-Returns an array of merged remaining networks.
+Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`.
 
 ### expandCidr(networks)
 

@@ -62,6 +62,7 @@ function doNormalize(cidr: Network, {compress = true, hexify = false}: Normalize
   }
 }
 
+/** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
 export function normalizeCidr<T extends Network | Network[]>(cidr: T, opts?: NormalizeOpts): T {
   if (Array.isArray(cidr)) {
     // @ts-expect-error - better than using overload
@@ -72,6 +73,7 @@ export function normalizeCidr<T extends Network | Network[]>(cidr: T, opts?: Nor
   }
 }
 
+/** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
 export function parseCidr(str: Network): ParsedCidr {
   const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
@@ -335,6 +337,7 @@ type CidrsByVersion = {
   6: [...cidr: CIDR[]],
 }
 
+/** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Network[] {
   // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
   const arr: ParsedCidr[] = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
@@ -348,6 +351,7 @@ export function mergeCidr(nets: Networks): Network[] {
   return [...merged[4].sort(compare), ...merged[6].sort(compare)];
 }
 
+/** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
 export function excludeCidr(base: Networks, excl: Networks): Network[] {
   const basenets: Network[] = mergeCidr(uniq(Array.isArray(base) ? base : [base]));
   const exclnets: Network[] = mergeCidr(uniq(Array.isArray(excl) ? excl : [excl]));
@@ -382,6 +386,7 @@ export function excludeCidr(base: Networks, excl: Networks): Network[] {
   return bases[4].concat(bases[6]).sort(compare);
 }
 
+/* Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
   const arr: Network[] = uniq(Array.isArray(nets) ? nets : [nets]);
 
@@ -393,6 +398,7 @@ export function* expandCidr(nets: Networks): Generator<Network> {
   }
 }
 
+/** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
 export function overlapCidr(a: Networks, b: Networks): boolean {
   const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
   const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
@@ -416,6 +422,7 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
   return false;
 }
 
+/** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
 export function containsCidr(a: Networks, b: Networks): boolean {
   const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
   const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
