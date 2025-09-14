@@ -30,7 +30,7 @@ type NormalizeOpts = {
 type Part = {
   start: bigint,
   end: bigint,
-}
+};
 
 function uniq<T extends any[]>(arr: T): T {
   return Array.from(new Set(arr)) as T;
@@ -282,7 +282,7 @@ type NetMapObj = {
 type NetMap = {
   4: NetMapObj,
   6: NetMapObj,
-}
+};
 
 function mapNets(nets: ParsedCidr[]): NetMap {
   const maps: NetMap = {4: {}, 6: {}}; // TODO: use Map with BigInt key
@@ -315,7 +315,6 @@ function doMerge(maps: NetMapObj): Part[] {
     const next = numbers[index + 1];
     if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
       // when there is a end and the next part is more than one number away, we cut a part
-      // @ts-expect-error
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
@@ -323,7 +322,6 @@ function doMerge(maps: NetMapObj): Part[] {
       end = null;
     } else if (index === (numbers.length - 1)) {
       // cut the final part
-      // @ts-expect-error
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
@@ -335,7 +333,7 @@ function doMerge(maps: NetMapObj): Part[] {
 type CidrsByVersion = {
   4: [...cidr: CIDR[]],
   6: [...cidr: CIDR[]],
-}
+};
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Network[] {
