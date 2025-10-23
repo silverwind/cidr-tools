@@ -1,7 +1,12 @@
 name: release
+
 on:
   push:
     tags: ["*"]
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   release:
@@ -10,7 +15,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: latest
@@ -18,5 +23,3 @@ jobs:
       - run: make deps
       - run: make build
       - run: make publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
