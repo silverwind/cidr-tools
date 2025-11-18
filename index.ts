@@ -8,7 +8,7 @@ type IPv4CIDR = string;
 type IPv6CIDR = string;
 type CIDR = string;
 type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
-type Networks = Network | Network[];
+type Networks = Network | Array<Network>;
 type IpVersion = 4 | 6 | 0;
 type ValidIpVersion = 4 | 6;
 
@@ -32,7 +32,7 @@ type Part = {
   end: bigint,
 };
 
-function uniq<T extends any[]>(arr: T): T {
+function uniq<T extends Array<any>>(arr: T): T {
   return Array.from(new Set(arr)) as T;
 }
 
@@ -63,7 +63,7 @@ function doNormalize(cidr: Network, {compress = true, hexify = false}: Normalize
 }
 
 /** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
-export function normalizeCidr<T extends Network | Network[]>(cidr: T, opts?: NormalizeOpts): T {
+export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?: NormalizeOpts): T {
   if (Array.isArray(cidr)) {
     // @ts-expect-error - better than using overload
     return cidr.map(entry => normalizeCidr(entry, opts));
@@ -92,7 +92,7 @@ export function parseCidr(str: Network): ParsedCidr {
     }
   }
 
-  const [ipAndMisc, prefix]: string[] = cidr.split("/");
+  const [ipAndMisc, prefix] = cidr.split("/");
 
   if (!/^[0-9]+$/.test(prefix)) {
     throw new Error(`Network is not a CIDR or IP: ${str}`);
@@ -140,8 +140,8 @@ function netContains(a: ParsedCidr, b: ParsedCidr): boolean {
 }
 
 // exclude b from a and return remainder cidrs
-function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion): CIDR[] {
-  const parts: Part[] = [];
+function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion): Array<CIDR> {
+  const parts: Array<Part> = [];
 
   // compareTo returns negative if left is less than right
 
@@ -190,7 +190,7 @@ function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion): CIDR[] {
     );
   }
 
-  const remaining = [];
+  const remaining: Array<CIDR> = [];
   for (const part of parts) {
     for (const subpart of subparts(part)) {
       remaining.push(formatPart(subpart, v));
@@ -205,7 +205,7 @@ function biggestPowerOfTwo(num: bigint): bigint {
   return 2n ** BigInt(String(num.toString(2).length - 1));
 }
 
-function subparts(part: Part): Part[] {
+function subparts(part: Part): Array<Part> {
   // special case for when part is length 1
   if ((part.end - part.start) === 1n) {
     if (part.end % 2n === 0n) {
@@ -284,7 +284,7 @@ type NetMap = {
   6: NetMapObj,
 };
 
-function mapNets(nets: ParsedCidr[]): NetMap {
+function mapNets(nets: Array<ParsedCidr>): NetMap {
   const maps: NetMap = {4: {}, 6: {}}; // TODO: use Map with BigInt key
   for (const {start, end, version} of nets) {
     if (!maps[version][String(start)]) maps[version][String(start)] = {start: 0, end: 0};
@@ -295,12 +295,12 @@ function mapNets(nets: ParsedCidr[]): NetMap {
   return maps;
 }
 
-function doMerge(maps: NetMapObj): Part[] {
-  let start = null;
-  let end = null;
+function doMerge(maps: NetMapObj): Array<Part> {
+  let start: bigint | null = null;
+  let end: bigint | null = null;
   const numbers = Object.keys(maps);
   let depth = 0;
-  const merged: Part[] = [];
+  const merged: Array<Part> = [];
 
   for (const [index, number] of numbers.entries()) {
     const marker = maps[String(number)];
@@ -315,6 +315,7 @@ function doMerge(maps: NetMapObj): Part[] {
     const next = numbers[index + 1];
     if (marker.end && depth === 0 && next && ((BigInt(next) - BigInt(number)) > 1)) {
       // when there is a end and the next part is more than one number away, we cut a part
+      // @ts-expect-error TODO
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
@@ -322,6 +323,7 @@ function doMerge(maps: NetMapObj): Part[] {
       end = null;
     } else if (index === (numbers.length - 1)) {
       // cut the final part
+      // @ts-expect-error TODO
       for (const sub of subparts({start, end})) {
         merged.push(sub);
       }
@@ -331,18 +333,18 @@ function doMerge(maps: NetMapObj): Part[] {
 }
 
 type CidrsByVersion = {
-  4: [...cidr: CIDR[]],
-  6: [...cidr: CIDR[]],
+  4: [...cidr: Array<CIDR>],
+  6: [...cidr: Array<CIDR>],
 };
 
 /** Returns an array of merged networks */
-export function mergeCidr(nets: Networks): Network[] {
+export function mergeCidr(nets: Networks): Array<Network> {
   // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
-  const arr: ParsedCidr[] = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
+  const arr: Array<ParsedCidr> = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
   const maps = mapNets(arr);
 
   const merged: CidrsByVersion = {4: [], 6: []};
-  for (const v of [4, 6] as ValidIpVersion[]) {
+  for (const v of [4, 6] as Array<ValidIpVersion>) {
     merged[v] = doMerge(maps[v]).map(part => formatPart(part, v));
   }
 
@@ -350,9 +352,9 @@ export function mergeCidr(nets: Networks): Network[] {
 }
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
-export function excludeCidr(base: Networks, excl: Networks): Network[] {
-  const basenets: Network[] = mergeCidr(uniq(Array.isArray(base) ? base : [base]));
-  const exclnets: Network[] = mergeCidr(uniq(Array.isArray(excl) ? excl : [excl]));
+export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
+  const basenets: Array<Network> = mergeCidr(uniq(Array.isArray(base) ? base : [base]));
+  const exclnets: Array<Network> = mergeCidr(uniq(Array.isArray(excl) ? excl : [excl]));
 
   const bases: CidrsByVersion = {4: [], 6: []};
   const excls: CidrsByVersion = {4: [], 6: []};
@@ -367,7 +369,7 @@ export function excludeCidr(base: Networks, excl: Networks): Network[] {
     if (version) excls[version].push(exclnet);
   }
 
-  for (const v of [4, 6] as ValidIpVersion[]) {
+  for (const v of [4, 6] as Array<ValidIpVersion>) {
     for (const exclcidr of excls[v]) {
       for (const [index, basecidr] of bases[v].entries()) {
         const base = parseCidr(basecidr);
@@ -386,7 +388,7 @@ export function excludeCidr(base: Networks, excl: Networks): Network[] {
 
 /* Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
-  const arr: Network[] = uniq(Array.isArray(nets) ? nets : [nets]);
+  const arr: Array<Network> = uniq(Array.isArray(nets) ? nets : [nets]);
 
   for (const net of mergeCidr(arr)) {
     const {start, end, version} = parseCidr(net);
@@ -398,8 +400,8 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 
 /** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
 export function overlapCidr(a: Networks, b: Networks): boolean {
-  const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
-  const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
+  const aNets: Array<Network> = uniq(Array.isArray(a) ? a : [a]);
+  const bNets: Array<Network> = uniq(Array.isArray(b) ? b : [b]);
 
   for (const a of aNets) {
     const aParsed = parseCidr(a);
@@ -422,8 +424,8 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 
 /** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
 export function containsCidr(a: Networks, b: Networks): boolean {
-  const aNets: Network[] = uniq(Array.isArray(a) ? a : [a]);
-  const bNets: Network[] = uniq(Array.isArray(b) ? b : [b]);
+  const aNets: Array<Network> = uniq(Array.isArray(a) ? a : [a]);
+  const bNets: Array<Network> = uniq(Array.isArray(b) ? b : [b]);
 
   const numExpected = bNets.length;
   let numFound = 0;
