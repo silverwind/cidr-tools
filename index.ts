@@ -88,14 +88,14 @@ export function parseCidr(str: Network): ParsedCidr {
       cidr = `${str}/${bits[version]}`;
       parsed.version = version;
     } else {
-      throw new Error(`Network is not a CIDR or IP: ${str}`);
+      throw new Error(`Network is not a CIDR or IP: "${str}"`);
     }
   }
 
   const [ipAndMisc, prefix] = cidr.split("/");
 
   if (!/^[0-9]+$/.test(prefix)) {
-    throw new Error(`Network is not a CIDR or IP: ${str}`);
+    throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
   const {number, version, ipv4mapped, scopeid} = parseIp(ipAndMisc);
