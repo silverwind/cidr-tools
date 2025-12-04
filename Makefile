@@ -11,12 +11,12 @@ deps: node_modules
 .PHONY: lint
 lint: node_modules
 	npx eslint --color .
-	npx tsc
+	npx tsgo
 
 .PHONY: lint-fix
 lint-fix: node_modules
 	npx eslint --color . --fix
-	npx tsc
+	npx tsgo
 
 .PHONY: test
 test: node_modules

@@ -20,6 +20,7 @@
     "ip-bigint": "^8.2.2"
   },
   "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20251203.1",
     "eslint": "9.39.1",
     "eslint-config-silverwind": "111.0.8",
     "typescript": "5.9.3",
