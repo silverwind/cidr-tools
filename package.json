@@ -20,16 +20,16 @@
     "ip-bigint": "^8.2.2"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20251203.1",
-    "eslint": "9.39.1",
-    "eslint-config-silverwind": "111.0.8",
+    "@typescript/native-preview": "7.0.0-dev.20260124.1",
+    "eslint": "9.39.2",
+    "eslint-config-silverwind": "118.0.0",
     "typescript": "5.9.3",
-    "typescript-config-silverwind": "13.0.2",
-    "updates": "16.9.1",
-    "versions": "14.0.2",
-    "vite": "7.2.2",
-    "vite-config-silverwind": "6.0.5",
-    "vitest": "4.0.10",
-    "vitest-config-silverwind": "10.4.2"
+    "typescript-config-silverwind": "14.0.0",
+    "updates": "17.0.8",
+    "versions": "14.0.3",
+    "vite": "7.3.1",
+    "vite-config-silverwind": "6.0.9",
+    "vitest": "4.0.18",
+    "vitest-config-silverwind": "10.6.1"
   }
 }
