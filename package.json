@@ -17,15 +17,15 @@
     "node": ">=18"
   },
   "dependencies": {
-    "ip-bigint": "^8.2.2"
+    "ip-bigint": "^8.2.3"
   },
   "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260124.1",
+    "@typescript/native-preview": "7.0.0-dev.20260128.1",
     "eslint": "9.39.2",
-    "eslint-config-silverwind": "118.0.0",
+    "eslint-config-silverwind": "118.0.1",
     "typescript": "5.9.3",
     "typescript-config-silverwind": "14.0.0",
-    "updates": "17.0.8",
+    "updates": "17.0.9",
     "versions": "14.0.3",
     "vite": "7.3.1",
     "vite-config-silverwind": "6.0.9",
