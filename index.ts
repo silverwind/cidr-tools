@@ -177,17 +177,17 @@ function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion): Array<CIDR> {
   //   bbb
   //   aaaa
   //   bbb
-  if (a.start >= b.start && a.end > b.end && b.end < a.end) {
+  if (a.start >= b.start && a.end > b.end) {
     parts.push({start: b.end + 1n, end: a.end});
   }
 
   //  aaaa
   //   bb
   if (a.start < b.start && a.end > b.end) {
-    parts.push({start: a.start, end: b.start - 1n});
-    if (b.end < a.end) {
-      parts.push({start: b.end + 1n, end: a.end});
-    }
+    parts.push(
+      {start: a.start, end: b.start - 1n},
+      {start: b.end + 1n, end: a.end},
+    );
   }
 
   const remaining: Array<CIDR> = [];
