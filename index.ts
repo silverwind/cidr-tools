@@ -308,7 +308,11 @@ function mapNets(nets: Array<ParsedCidr>): NetMap {
 function doMerge(maps: NetMapObj): Array<Part> {
   let start: bigint | null = null;
   let end: bigint | null = null;
-  const numbers = Object.keys(maps);
+  const numbers = Object.keys(maps).sort((a, b) => {
+    const aBig = BigInt(a);
+    const bBig = BigInt(b);
+    return aBig > bBig ? 1 : aBig < bBig ? -1 : 0;
+  });
   let depth = 0;
   const merged: Array<Part> = [];
 
@@ -349,8 +353,7 @@ type CidrsByVersion = {
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
-  // sort to workaround https://github.com/silverwind/cidr-tools/issues/17
-  const arr: Array<ParsedCidr> = uniq((Array.isArray(nets) ? nets : [nets]).sort(compare).map(parseCidr));
+  const arr: Array<ParsedCidr> = uniq((Array.isArray(nets) ? nets : [nets]).map(parseCidr));
   const maps = mapNets(arr);
 
   const merged: CidrsByVersion = {4: [], 6: []};
