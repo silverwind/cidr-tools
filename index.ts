@@ -206,6 +206,16 @@ function biggestPowerOfTwo(num: bigint): bigint {
 }
 
 function subparts(part: Part): Array<Part> {
+  // Guard against invalid ranges where end < start
+  if (part.end < part.start) {
+    return [];
+  }
+
+  // special case for when part is a single IP
+  if (part.end === part.start) {
+    return [part];
+  }
+
   // special case for when part is length 1
   if ((part.end - part.start) === 1n) {
     if (part.end % 2n === 0n) {

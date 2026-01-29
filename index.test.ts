@@ -189,6 +189,18 @@ test("excludeCidr", () => {
       "0.0.0.3/32",
     ]
   `);
+
+  // Test case from issue #24 - division by zero with large IP lists
+  // This previously caused "RangeError: Division by zero" with the full
+  // list of Google IPs. Simplified to test the edge case guards.
+  const allIpRanges = ["34.0.0.0/15", "2001:4860::/32"];
+  const gcpIpRanges = ["34.80.0.0/15", "2600:1900:8000::/44"];
+  expect(excludeCidr(allIpRanges, gcpIpRanges)).toMatchInlineSnapshot(`
+    [
+      "34.0.0.0/15",
+      "2001:4860::/32",
+    ]
+  `);
 });
 
 test("expandCidr", () => {
