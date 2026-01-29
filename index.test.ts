@@ -101,7 +101,7 @@ test("mergeCidr", () => {
       "0.0.192.0/24",
     ]
   `);
-  
+
   // Test cases for issue #17 - division by zero with unsorted IPv6 addresses
   // https://github.com/silverwind/cidr-tools/issues/17
   // Sorted version (works without fix)
@@ -130,6 +130,19 @@ test("mergeCidr", () => {
     [
       "::1:0:0/128",
       "::2:0:0/127",
+    ]
+  `);
+  // Additional edge cases for unsorted IPv6
+  expect(mergeCidr(["::3/128", "::2/128", "::1/128"])).toMatchInlineSnapshot(`
+    [
+      "::1/128",
+      "::2/127",
+    ]
+  `);
+  expect(mergeCidr(["2001:db8::2/128", "2001:db8::1/128"])).toMatchInlineSnapshot(`
+    [
+      "2001:db8::1/128",
+      "2001:db8::2/128",
     ]
   `);
   expect(mergeCidr(["0:0:0:0:0:100:0:0:1/128", "0:0:0:0:0:100:0:0:3/128"])).toMatchInlineSnapshot(`
