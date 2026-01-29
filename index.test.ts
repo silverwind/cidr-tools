@@ -195,10 +195,12 @@ test("excludeCidr", () => {
   // list of Google IPs. Simplified to test the edge case guards.
   const allIpRanges = ["34.0.0.0/15", "2001:4860::/32"];
   const gcpIpRanges = ["34.80.0.0/15", "2600:1900:8000::/44"];
-  const result = excludeCidr(allIpRanges, gcpIpRanges);
-  expect(result.length).toBeGreaterThan(0);
-  expect(result).toContain("34.0.0.0/15");
-  expect(result).toContain("2001:4860::/32");
+  expect(excludeCidr(allIpRanges, gcpIpRanges)).toMatchInlineSnapshot(`
+    [
+      "34.0.0.0/15",
+      "2001:4860::/32",
+    ]
+  `);
 });
 
 test("expandCidr", () => {
