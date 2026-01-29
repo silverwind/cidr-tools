@@ -177,17 +177,17 @@ function excludeNets(a: ParsedCidr, b: ParsedCidr, v: IpVersion): Array<CIDR> {
   //   bbb
   //   aaaa
   //   bbb
-  if (a.start >= b.start && a.end > b.end) {
+  if (a.start >= b.start && a.end > b.end && b.end < a.end) {
     parts.push({start: b.end + 1n, end: a.end});
   }
 
   //  aaaa
   //   bb
   if (a.start < b.start && a.end > b.end) {
-    parts.push(
-      {start: a.start, end: b.start - 1n},
-      {start: b.end + 1n, end: a.end},
-    );
+    parts.push({start: a.start, end: b.start - 1n});
+    if (b.end < a.end) {
+      parts.push({start: b.end + 1n, end: a.end});
+    }
   }
 
   const remaining: Array<CIDR> = [];
@@ -206,6 +206,16 @@ function biggestPowerOfTwo(num: bigint): bigint {
 }
 
 function subparts(part: Part): Array<Part> {
+  // Guard against invalid ranges where end < start
+  if (part.end < part.start) {
+    return [];
+  }
+
+  // special case for when part is a single IP
+  if (part.end === part.start) {
+    return [part];
+  }
+
   // special case for when part is length 1
   if ((part.end - part.start) === 1n) {
     if (part.end % 2n === 0n) {
@@ -216,11 +226,6 @@ function subparts(part: Part): Array<Part> {
   }
 
   const size = diff(part.end, part.start);
-  // Guard against invalid ranges where end < start
-  if (size <= 0n) {
-    console.error("Invalid range detected in subparts:", {start: part.start, end: part.end, size});
-    return [];
-  }
   let biggest = biggestPowerOfTwo(size);
 
   let start: bigint;
