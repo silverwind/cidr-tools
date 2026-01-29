@@ -101,24 +101,31 @@ test("mergeCidr", () => {
       "0.0.192.0/24",
     ]
   `);
+  
+  // Test cases for issue #17 - division by zero with unsorted IPv6 addresses
+  // https://github.com/silverwind/cidr-tools/issues/17
+  // Sorted version (works without fix)
   expect(mergeCidr(["1:1:1:1::/128", "1:1:1:2::/128"])).toMatchInlineSnapshot(`
     [
       "1:1:1:1::/128",
       "1:1:1:2::/128",
     ]
   `);
+  // Unsorted version (previously caused RangeError: Division by zero)
   expect(mergeCidr(["1:1:1:2::/128", "1:1:1:1::/128"])).toMatchInlineSnapshot(`
     [
       "1:1:1:1::/128",
       "1:1:1:2::/128",
     ]
   `);
+  // Minimal reproduction from issue comment
   expect(mergeCidr(["::2:0:0/128", "::1:0:0/128"])).toMatchInlineSnapshot(`
     [
       "::1:0:0/128",
       "::2:0:0/128",
     ]
   `);
+  // Extended test case with three addresses that can be merged
   expect(mergeCidr(["::2:0:0/128", "::1:0:0/128", "::2:0:1/128"])).toMatchInlineSnapshot(`
     [
       "::1:0:0/128",
