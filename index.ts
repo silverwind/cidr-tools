@@ -216,6 +216,11 @@ function subparts(part: Part): Array<Part> {
   }
 
   const size = diff(part.end, part.start);
+  // Guard against invalid ranges where end < start
+  if (size <= 0n) {
+    console.error("Invalid range detected in subparts:", {start: part.start, end: part.end, size});
+    return [];
+  }
   let biggest = biggestPowerOfTwo(size);
 
   let start: bigint;
