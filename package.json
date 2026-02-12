@@ -28,6 +28,7 @@
     "typescript": "5.9.3",
     "typescript-config-silverwind": "14.0.0",
     "updates": "17.1.0",
+    "updates-config-silverwind": "1.0.3",
     "versions": "14.1.0",
     "vite": "7.3.1",
     "vite-config-silverwind": "6.0.9",
