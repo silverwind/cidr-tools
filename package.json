@@ -18,7 +18,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "ip-bigint": "^8.2.4"
+    "ip-bigint": "^8.2.6"
   },
   "devDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260202.1",

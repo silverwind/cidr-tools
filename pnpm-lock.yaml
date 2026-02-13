@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       ip-bigint:
-        specifier: ^8.2.4
-        version: 8.2.4
+        specifier: ^8.2.6
+        version: 8.2.6
     devDependencies:
       '@typescript/native-preview':
         specifier: 7.0.0-dev.20260202.1
@@ -916,8 +916,8 @@ packages:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
 
-  ip-bigint@8.2.4:
-    resolution: {integrity: sha512-uLnCfRdjiqRSX36+sKW3PBsotx58qEXSfbRWqdy1N5w6LtlIDCQnxuVce5OIBD50WA9VX2DWixtiBVtalWb1fA==}
+  ip-bigint@8.2.6:
+    resolution: {integrity: sha512-H1K1ZhBuvr8YfxW+5Y4Fo6oaJg6WoEApG2phRQu3zIWLurCvznm2LL/yLSc6SNtT4CfaOT2gRklMDmWaPlkEzQ==}
     engines: {node: '>=18'}
 
   is-bun-module@2.0.0:
@@ -2023,7 +2023,7 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  ip-bigint@8.2.4: {}
+  ip-bigint@8.2.6: {}
 
   is-bun-module@2.0.0:
     dependencies:
