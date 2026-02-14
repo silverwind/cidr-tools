@@ -1,4 +1,4 @@
-import {parseIp, stringifyIp, normalizeIp, ipVersion} from "ip-bigint";
+import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 const bits = {4: 32, 6: 128};
 
@@ -38,12 +38,10 @@ type Part = {
   end: bigint,
 };
 
-function uniq<T extends Array<any>>(arr: T): T {
-  return Array.from(new Set(arr)) as T;
-}
 
-function cidrVersion(cidr: Network): IpVersion {
-  return cidr.includes("/") ? ipVersion(cidr) : 0;
+function uniq<T extends Array<any>>(arr: T): T {
+  const set = new Set(arr);
+  return set.size === arr.length ? arr : Array.from(set) as T;
 }
 
 function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
@@ -70,38 +68,41 @@ export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?
 
 /** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
 export function parseCidr(str: Network): ParsedCidr {
-  const cidrVer = cidrVersion(str);
   const parsed = Object.create(null);
+  const slashIndex = str.indexOf("/");
+  let ipPart: string;
+  let prefix: string;
 
-  let cidr: string;
-  if (cidrVer) {
-    cidr = str;
-    parsed.version = cidrVer;
-  } else {
-    const version = ipVersion(str);
-    if (version) {
-      cidr = `${str}/${bits[version]}`;
-      parsed.version = version;
-    } else {
+  if (slashIndex !== -1) {
+    ipPart = str.substring(0, slashIndex);
+    prefix = str.substring(slashIndex + 1);
+    if (!/^[0-9]+$/.test(prefix)) {
       throw new Error(`Network is not a CIDR or IP: "${str}"`);
     }
+    parsed.prefixPresent = true;
+  } else {
+    ipPart = str;
+    parsed.prefixPresent = false;
+    prefix = "";
   }
 
-  const [ipAndMisc, prefix] = cidr.split("/");
-
-  if (!/^[0-9]+$/.test(prefix)) {
+  const {number, version, ipv4mapped, scopeid} = parseIp(ipPart);
+  if (!version) {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
-  const {number, version, ipv4mapped, scopeid} = parseIp(ipAndMisc);
+  if (!parsed.prefixPresent) {
+    prefix = String(bits[version as ValidIpVersion]);
+  }
+
+  parsed.version = version;
   parsed.ip = stringifyIp({number, version, ipv4mapped, scopeid});
   parsed.cidr = `${parsed.ip}/${prefix}`;
   parsed.prefix = prefix;
-  parsed.prefixPresent = Boolean(cidrVer);
 
   const numBits = bits[version as ValidIpVersion];
-  const hostBits = BigInt(numBits - Number(prefix));
-  const mask = hostBits > 0n ? (1n << hostBits) - 1n : 0n;
+  const hostBits = numBits - Number(prefix);
+  const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
   parsed.start = number & ~mask;
   parsed.end = number | mask;
   return parsed;
@@ -110,37 +111,38 @@ export function parseCidr(str: Network): ParsedCidr {
 // Lightweight internal parser returning only {start, end, version}.
 // Skips stringifyIp() and string field construction.
 function parseCidrLean(str: Network): LeanParsedCidr {
-  const cidrVer = cidrVersion(str);
-  let version: ValidIpVersion;
-  let cidr: string;
+  const slashIndex = str.indexOf("/");
+  let ipPart: string;
+  let prefixNum: number;
 
-  if (cidrVer) {
-    cidr = str;
-    version = cidrVer as ValidIpVersion;
-  } else {
-    const v = ipVersion(str);
-    if (v) {
-      version = v as ValidIpVersion;
-      cidr = `${str}/${bits[version]}`;
-    } else {
+  if (slashIndex !== -1) {
+    ipPart = str.substring(0, slashIndex);
+    const prefixStr = str.substring(slashIndex + 1);
+    if (!/^[0-9]+$/.test(prefixStr)) {
       throw new Error(`Network is not a CIDR or IP: "${str}"`);
     }
+    prefixNum = Number(prefixStr);
+  } else {
+    ipPart = str;
+    prefixNum = -1;
   }
 
-  const [ipAndMisc, prefix] = cidr.split("/");
-
-  if (!/^[0-9]+$/.test(prefix)) {
+  const {number, version} = parseIp(ipPart);
+  if (!version) {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
-  const {number, version: parsedVersion} = parseIp(ipAndMisc);
-  const numBits = bits[parsedVersion as ValidIpVersion];
-  const hostBits = BigInt(numBits - Number(prefix));
-  const mask = hostBits > 0n ? (1n << hostBits) - 1n : 0n;
+  if (prefixNum === -1) {
+    prefixNum = bits[version as ValidIpVersion];
+  }
+
+  const numBits = bits[version as ValidIpVersion];
+  const hostBits = numBits - prefixNum;
+  const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
   return {
     start: number & ~mask,
     end: number | mask,
-    version,
+    version: version as ValidIpVersion,
   };
 }
 
@@ -240,7 +242,7 @@ function subparts(part: Part, output?: Array<Part>): Array<Part> {
 
   let start: bigint;
   let end: bigint;
-  if (size === biggest && part.start + size === part.end) {
+  if (size === biggest && part.start % biggest === 0n) {
     output.push(part);
     return output;
   } else if (part.start % biggest === 0n) {
@@ -351,22 +353,19 @@ function doMerge(maps: NetMapObj): Array<Part> {
   return merged;
 }
 
-type CidrsByVersion = {
-  4: [...cidr: Array<CIDR>],
-  6: [...cidr: Array<CIDR>],
-};
-
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
   const arr = uniq(Array.isArray(nets) ? nets : [nets]).map(parseCidrLean);
   const maps = mapNets(arr);
 
-  const merged: CidrsByVersion = {4: [], 6: []};
+  const merged: Array<Network> = [];
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    merged[v] = doMerge(maps[v]).map(part => formatPart(part, v));
+    for (const part of doMerge(maps[v])) {
+      merged.push(formatPart(part, v));
+    }
   }
 
-  return [...merged[4], ...merged[6]];
+  return merged;
 }
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
@@ -391,7 +390,9 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
     for (const exclPart of excls[v]) {
       const newBases: Array<Part> = [];
       for (const basePart of bases[v]) {
-        newBases.push(...excludeNetsParts(basePart, exclPart));
+        for (const part of excludeNetsParts(basePart, exclPart)) {
+          newBases.push(part);
+        }
       }
       bases[v] = newBases;
     }
@@ -424,9 +425,15 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
   const aNets = uniq(Array.isArray(a) ? a : [a]).map(parseCidrLean);
   const bNets = uniq(Array.isArray(b) ? b : [b]).map(parseCidrLean);
 
+  // Separate by version in a single pass
+  const aByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  const bByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  for (const n of aNets) aByVersion[n.version].push(n);
+  for (const n of bNets) bByVersion[n.version].push(n);
+
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    const aVer = aNets.filter(n => n.version === v).sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
-    const bVer = bNets.filter(n => n.version === v).sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+    const aVer = aByVersion[v].sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+    const bVer = bByVersion[v].sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
 
     let i = 0, j = 0;
     while (i < aVer.length && j < bVer.length) {
@@ -446,9 +453,15 @@ export function containsCidr(a: Networks, b: Networks): boolean {
   const aNets = uniq(Array.isArray(a) ? a : [a]).map(parseCidrLean);
   const bNets = uniq(Array.isArray(b) ? b : [b]).map(parseCidrLean);
 
+  // Separate by version in a single pass
+  const aByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  const bByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  for (const n of aNets) aByVersion[n.version].push(n);
+  for (const n of bNets) bByVersion[n.version].push(n);
+
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    const containers = aNets.filter(n => n.version === v).sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
-    const targets = bNets.filter(n => n.version === v);
+    const containers = aByVersion[v].sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+    const targets = bByVersion[v];
 
     if (targets.length === 0) continue;
     if (containers.length === 0) return false;
