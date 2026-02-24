@@ -29,8 +29,8 @@ test-update: node_modules
 .PHONY: build
 build: node_modules $(DIST_FILES)
 
-$(DIST_FILES): $(SOURCE_FILES) pnpm-lock.yaml vite.config.ts
-	pnpm exec vite build
+$(DIST_FILES): $(SOURCE_FILES) pnpm-lock.yaml package.json tsdown.config.ts
+	pnpm exec tsdown
 
 .PHONY: update
 update: node_modules
