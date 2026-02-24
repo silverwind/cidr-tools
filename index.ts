@@ -204,13 +204,7 @@ function excludeNetsParts(a: Part, b: Part): Array<Part> {
 
 function biggestPowerOfTwo(num: bigint): bigint {
   if (num === 0n) return 0n;
-  let b = 0n;
-  let n = num >> 1n;
-  while (n > 0n) {
-    b++;
-    n >>= 1n;
-  }
-  return 1n << b;
+  return 1n << BigInt(num.toString(2).length - 1);
 }
 
 function subparts(part: Part, output?: Array<Part>): Array<Part> {
@@ -292,75 +286,40 @@ function diff(a: bigint, b: bigint): bigint {
 function formatPart(part: Part, version: IpVersion): CIDR {
   const ip = normalizeIp(stringifyIp({number: part.start, version}));
   const size = diff(part.end, part.start);
-  let hostBits = 0;
-  let s = size >> 1n;
-  while (s > 0n) { s >>= 1n; hostBits++; }
+  const hostBits = size <= 1n ? 0 : size.toString(2).length - 1;
   const prefix = bits[version as ValidIpVersion] - hostBits;
   return `${ip}/${prefix}`;
 }
 
-type NetMapEntry = {
-  start: number,
-  end: number,
-};
-
-type NetMapObj = Map<bigint, NetMapEntry>;
-
-type NetMap = {
-  4: NetMapObj,
-  6: NetMapObj,
-};
-
-function mapNets(nets: Array<LeanParsedCidr>): NetMap {
-  const maps: NetMap = {4: new Map(), 6: new Map()};
-  for (const {start, end, version} of nets) {
-    let startEntry = maps[version].get(start);
-    if (!startEntry) { startEntry = {start: 0, end: 0}; maps[version].set(start, startEntry); }
-    let endEntry = maps[version].get(end);
-    if (!endEntry) { endEntry = {start: 0, end: 0}; maps[version].set(end, endEntry); }
-    startEntry.start += 1;
-    endEntry.end += 1;
-  }
-  return maps;
-}
-
-function doMerge(maps: NetMapObj): Array<Part> {
-  let start: bigint | null = null;
-  let end: bigint | null = null;
-  const numbers = Array.from(maps.keys()).sort((a, b) => a > b ? 1 : a < b ? -1 : 0);
-  let depth = 0;
+function mergeIntervals(nets: Array<LeanParsedCidr>): Array<Part> {
+  if (nets.length === 0) return [];
+  const sorted = nets.slice().sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0);
   const merged: Array<Part> = [];
-
-  for (const [index, number] of numbers.entries()) {
-    const marker = maps.get(number)!;
-
-    if (start === null && marker.start) start = number;
-    if (marker.end) end = number;
-    if (start === null) continue;
-
-    if (marker.start) depth += marker.start;
-    if (marker.end) depth -= marker.end;
-
-    const next = numbers[index + 1];
-    if (marker.end && depth === 0 && next !== undefined && ((next - number) > 1n)) {
-      subparts({start, end: end!}, merged);
-      start = null;
-      end = null;
-    } else if (index === (numbers.length - 1)) {
-      subparts({start, end: end!}, merged);
+  let curStart = sorted[0].start;
+  let curEnd = sorted[0].end;
+  for (let i = 1; i < sorted.length; i++) {
+    const {start, end} = sorted[i];
+    if (start <= curEnd + 1n) {
+      if (end > curEnd) curEnd = end;
+    } else {
+      subparts({start: curStart, end: curEnd}, merged);
+      curStart = start;
+      curEnd = end;
     }
   }
+  subparts({start: curStart, end: curEnd}, merged);
   return merged;
 }
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
   const arr = uniq(Array.isArray(nets) ? nets : [nets]).map(parseCidrLean);
-  const maps = mapNets(arr);
+  const byVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  for (const n of arr) byVersion[n.version].push(n);
 
   const merged: Array<Network> = [];
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    for (const part of doMerge(maps[v])) {
+    for (const part of mergeIntervals(byVersion[v])) {
       merged.push(formatPart(part, v));
     }
   }
@@ -373,16 +332,19 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
   const baseArr = uniq(Array.isArray(base) ? base : [base]).map(parseCidrLean);
   const exclArr = uniq(Array.isArray(excl) ? excl : [excl]).map(parseCidrLean);
 
-  // Merge base and excl networks into Part objects
-  const baseMaps = mapNets(baseArr);
-  const exclMaps = mapNets(exclArr);
+  // Separate by version
+  const baseByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  const exclByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  for (const n of baseArr) baseByVersion[n.version].push(n);
+  for (const n of exclArr) exclByVersion[n.version].push(n);
 
+  // Merge base and excl networks into Part objects
   const bases: {4: Array<Part>, 6: Array<Part>} = {4: [], 6: []};
   const excls: {4: Array<Part>, 6: Array<Part>} = {4: [], 6: []};
 
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    bases[v] = doMerge(baseMaps[v]);
-    excls[v] = doMerge(exclMaps[v]);
+    bases[v] = mergeIntervals(baseByVersion[v]);
+    excls[v] = mergeIntervals(exclByVersion[v]);
   }
 
   // Perform exclusions with Part objects
