@@ -146,61 +146,6 @@ function parseCidrLean(str: Network): LeanParsedCidr {
   };
 }
 
-// exclude b from a and return remainder parts
-function excludeNetsParts(a: Part, b: Part): Array<Part> {
-  //       aaa
-  //   bbb
-  //   aaa
-  //       bbb
-  if (a.start > b.end || a.end < b.start) {
-    return [a];
-  }
-
-  //   aaa
-  //   bbb
-  if (a.start === b.start && a.end === b.end) {
-    return [];
-  }
-
-  //   aa
-  //  bbbb
-  if (a.start > b.start && a.end < b.end) {
-    return [];
-  }
-
-  const parts: Array<Part> = [];
-
-  // aaaa
-  //   bbbb
-  // aaaa
-  //   bb
-  if (a.start < b.start && a.end <= b.end) {
-    parts.push({start: a.start, end: b.start - 1n});
-  }
-
-  //    aaa
-  //   bbb
-  //   aaaa
-  //   bbb
-  if (a.start >= b.start && a.end > b.end) {
-    parts.push({start: b.end + 1n, end: a.end});
-  }
-
-  //  aaaa
-  //   bb
-  if (a.start < b.start && a.end > b.end) {
-    parts.push(
-      {start: a.start, end: b.start - 1n},
-      {start: b.end + 1n, end: a.end},
-    );
-  }
-
-  const remaining: Array<Part> = [];
-  for (const part of parts) {
-    subparts(part, remaining);
-  }
-  return remaining;
-}
 
 function biggestPowerOfTwo(num: bigint): bigint {
   if (num === 0n) return 0n;
@@ -284,14 +229,15 @@ function diff(a: bigint, b: bigint): bigint {
 }
 
 function formatPart(part: Part, version: IpVersion): CIDR {
-  const ip = normalizeIp(stringifyIp({number: part.start, version}));
+  const ip = stringifyIp({number: part.start, version});
   const size = diff(part.end, part.start);
   const hostBits = size <= 1n ? 0 : size.toString(2).length - 1;
   const prefix = bits[version as ValidIpVersion] - hostBits;
   return `${ip}/${prefix}`;
 }
 
-function mergeIntervals(nets: Array<LeanParsedCidr>): Array<Part> {
+// Merge overlapping/adjacent intervals into raw (non-CIDR-aligned) intervals
+function mergeIntervalsRaw(nets: Array<LeanParsedCidr>): Array<Part> {
   if (nets.length === 0) return [];
   const sorted = nets.slice().sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0);
   const merged: Array<Part> = [];
@@ -302,13 +248,57 @@ function mergeIntervals(nets: Array<LeanParsedCidr>): Array<Part> {
     if (start <= curEnd + 1n) {
       if (end > curEnd) curEnd = end;
     } else {
-      subparts({start: curStart, end: curEnd}, merged);
+      merged.push({start: curStart, end: curEnd});
       curStart = start;
       curEnd = end;
     }
   }
-  subparts({start: curStart, end: curEnd}, merged);
+  merged.push({start: curStart, end: curEnd});
   return merged;
+}
+
+function mergeIntervals(nets: Array<LeanParsedCidr>): Array<Part> {
+  const merged: Array<Part> = [];
+  for (const part of mergeIntervalsRaw(nets)) {
+    subparts(part, merged);
+  }
+  return merged;
+}
+
+// Subtract sorted non-overlapping excl intervals from sorted non-overlapping base intervals.
+// Both inputs must be sorted by start. Returns raw (non-CIDR-aligned) intervals.
+function subtractSorted(bases: Array<Part>, excls: Array<Part>): Array<Part> {
+  if (excls.length === 0) return bases;
+  if (bases.length === 0) return [];
+
+  const result: Array<Part> = [];
+  let j = 0;
+
+  for (const base of bases) {
+    let start = base.start;
+    const end = base.end;
+
+    // Skip exclusions that end before this base starts
+    while (j < excls.length && excls[j].end < start) {
+      j++;
+    }
+
+    // Process overlapping exclusions (use temp pointer to not skip excls that span multiple bases)
+    let k = j;
+    while (k < excls.length && excls[k].start <= end && start <= end) {
+      if (excls[k].start > start) {
+        result.push({start, end: excls[k].start - 1n});
+      }
+      start = excls[k].end + 1n;
+      k++;
+    }
+
+    if (start <= end) {
+      result.push({start, end});
+    }
+  }
+
+  return result;
 }
 
 /** Returns an array of merged networks */
@@ -338,35 +328,21 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
   for (const n of baseArr) baseByVersion[n.version].push(n);
   for (const n of exclArr) exclByVersion[n.version].push(n);
 
-  // Merge base and excl networks into Part objects
-  const bases: {4: Array<Part>, 6: Array<Part>} = {4: [], 6: []};
-  const excls: {4: Array<Part>, 6: Array<Part>} = {4: [], 6: []};
-
-  for (const v of [4, 6] as Array<ValidIpVersion>) {
-    bases[v] = mergeIntervals(baseByVersion[v]);
-    excls[v] = mergeIntervals(exclByVersion[v]);
-  }
-
-  // Perform exclusions with Part objects
-  for (const v of [4, 6] as Array<ValidIpVersion>) {
-    for (const exclPart of excls[v]) {
-      const newBases: Array<Part> = [];
-      for (const basePart of bases[v]) {
-        for (const part of excludeNetsParts(basePart, exclPart)) {
-          newBases.push(part);
-        }
-      }
-      bases[v] = newBases;
-    }
-  }
-
-  // Format to strings at the end
+  // Merge into raw intervals (no CIDR alignment needed for subtraction)
+  // Then subtract using sweep-line, and only CIDR-align the final results
   const result: Array<Network> = [];
   for (const v of [4, 6] as Array<ValidIpVersion>) {
-    for (const part of bases[v]) {
-      result.push(formatPart(part, v));
+    const baseParts = mergeIntervalsRaw(baseByVersion[v]);
+    const exclParts = mergeIntervalsRaw(exclByVersion[v]);
+    const remaining = subtractSorted(baseParts, exclParts);
+    for (const part of remaining) {
+      const aligned = subparts(part);
+      for (const p of aligned) {
+        result.push(formatPart(p, v));
+      }
     }
   }
+
   return result;
 }
 
