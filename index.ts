@@ -93,10 +93,10 @@ export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?
 
 /** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
 export function parseCidr(str: Network): ParsedCidr {
-  const parsed = Object.create(null);
   const slashIndex = str.indexOf("/");
   let ipPart: string;
   let prefix: string;
+  let prefixPresent: boolean;
 
   if (slashIndex !== -1) {
     ipPart = str.substring(0, slashIndex);
@@ -104,10 +104,10 @@ export function parseCidr(str: Network): ParsedCidr {
     if (!/^[0-9]+$/.test(prefix)) {
       throw new Error(`Network is not a CIDR or IP: "${str}"`);
     }
-    parsed.prefixPresent = true;
+    prefixPresent = true;
   } else {
     ipPart = str;
-    parsed.prefixPresent = false;
+    prefixPresent = false;
     prefix = "";
   }
 
@@ -116,21 +116,23 @@ export function parseCidr(str: Network): ParsedCidr {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
-  if (!parsed.prefixPresent) {
+  if (!prefixPresent) {
     prefix = String(bits[version as ValidIpVersion]);
   }
 
-  parsed.version = version;
-  parsed.ip = stringifyIp({number, version, ipv4mapped, scopeid});
-  parsed.cidr = `${parsed.ip}/${prefix}`;
-  parsed.prefix = prefix;
-
+  const ip = stringifyIp({number, version, ipv4mapped, scopeid});
   const numBits = bits[version as ValidIpVersion];
   const hostBits = numBits - Number(prefix);
   const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
-  parsed.start = number & ~mask;
-  parsed.end = number | mask;
-  return parsed;
+  return {
+    cidr: `${ip}/${prefix}`,
+    ip,
+    version: version as ValidIpVersion,
+    prefix,
+    prefixPresent,
+    start: number & ~mask,
+    end: number | mask,
+  };
 }
 
 // Lightweight internal parser returning only {start, end, version}.
@@ -143,11 +145,14 @@ function parseCidrLean(str: Network): LeanParsedCidr {
 
   if (slashIndex !== -1) {
     ipPart = str.substring(0, slashIndex);
-    const prefixStr = str.substring(slashIndex + 1);
-    if (!/^[0-9]+$/.test(prefixStr)) {
-      throw new Error(`Network is not a CIDR or IP: "${str}"`);
+    // Inline prefix parsing: validate digits and compute number in one pass
+    if (slashIndex + 1 >= str.length) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+    prefixNum = 0;
+    for (let i = slashIndex + 1; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      if (c < 48 || c > 57) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+      prefixNum = prefixNum * 10 + (c - 48);
     }
-    prefixNum = Number(prefixStr);
   } else {
     ipPart = str;
     prefixNum = -1;
@@ -158,10 +163,14 @@ function parseCidrLean(str: Network): LeanParsedCidr {
     const v4num = parseIPv4Fast(ipPart);
     if (v4num !== -1) {
       if (prefixNum === -1) prefixNum = 32;
-      const bigNum = BigInt(v4num);
       const hostBits = 32 - prefixNum;
-      const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
-      return {start: bigNum & ~mask, end: bigNum | mask, version: 4};
+      if (hostBits >= 32) return {start: 0n, end: 4294967295n, version: 4};
+      const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
+      return {
+        start: BigInt((v4num & ~mask) >>> 0),
+        end: BigInt((v4num | mask) >>> 0),
+        version: 4,
+      };
     }
   }
 
@@ -190,76 +199,70 @@ function biggestPowerOfTwo(num: bigint): bigint {
   return 1n << BigInt(num.toString(2).length - 1);
 }
 
-function subparts(part: Part, output?: Array<Part>): Array<Part> {
-  if (!output) output = [];
-
+function subparts(pStart: bigint, pEnd: bigint, output: Array<Part>): void {
   // Guard against invalid ranges where end < start
-  if (part.end < part.start) {
-    return output;
-  }
+  if (pEnd < pStart) return;
 
   // special case for when part is a single IP
-  if (part.end === part.start) {
-    output.push(part);
-    return output;
+  if (pEnd === pStart) {
+    output.push({start: pStart, end: pEnd});
+    return;
   }
 
   // special case for when part is length 1
-  if ((part.end - part.start) === 1n) {
-    if (part.end % 2n === 0n) {
-      output.push({start: part.start, end: part.start}, {start: part.end, end: part.end});
+  if ((pEnd - pStart) === 1n) {
+    if (pEnd % 2n === 0n) {
+      output.push({start: pStart, end: pStart}, {start: pEnd, end: pEnd});
     } else {
-      output.push({start: part.start, end: part.end});
+      output.push({start: pStart, end: pEnd});
     }
-    return output;
+    return;
   }
 
-  const size = diff(part.end, part.start);
+  const size = diff(pEnd, pStart);
   let biggest = biggestPowerOfTwo(size);
 
   let start: bigint;
   let end: bigint;
-  if (size === biggest && part.start % biggest === 0n) {
-    output.push(part);
-    return output;
-  } else if (part.start % biggest === 0n) {
+  if (size === biggest && pStart % biggest === 0n) {
+    output.push({start: pStart, end: pEnd});
+    return;
+  } else if (pStart % biggest === 0n) {
     // start is matching on the size-defined boundary - ex: 0-12, use 0-8
-    start = part.start;
+    start = pStart;
     end = start + biggest - 1n;
   } else {
-    start = (part.end / biggest) * biggest;
+    start = (pEnd / biggest) * biggest;
 
     // start is not matching on the size-defined boundary - 4-16, use 8-16
-    if ((start + biggest - 1n) > part.end) {
+    if ((start + biggest - 1n) > pEnd) {
       // divide will floor to nearest integer
-      start = ((part.end / biggest) - 1n) * biggest;
+      start = ((pEnd / biggest) - 1n) * biggest;
 
-      while (start < part.start) {
+      while (start < pStart) {
         biggest /= 2n;
-        start = ((part.end / biggest) - 1n) * biggest;
+        start = ((pEnd / biggest) - 1n) * biggest;
       }
 
       end = start + biggest - 1n;
     } else {
-      start = (part.end / biggest) * biggest;
+      start = (pEnd / biggest) * biggest;
       end = start + biggest - 1n;
     }
   }
 
   // left side first (ascending order)
-  if (start !== part.start) {
-    subparts({start: part.start, end: start - 1n}, output);
+  if (start !== pStart) {
+    subparts(pStart, start - 1n, output);
   }
 
   // biggest chunk in the middle
   output.push({start, end});
 
   // right side last
-  if (end !== part.end) {
-    subparts({start: end + 1n, end: part.end}, output);
+  if (end !== pEnd) {
+    subparts(end + 1n, pEnd, output);
   }
-
-  return output;
 }
 
 function diff(a: bigint, b: bigint): bigint {
@@ -281,14 +284,15 @@ function formatPart(part: Part, version: IpVersion): CIDR {
 }
 
 // Merge overlapping/adjacent intervals into raw (non-CIDR-aligned) intervals
+// Sort in-place (all callers pass temporary arrays that aren't reused)
 function mergeIntervalsRaw(nets: Array<LeanParsedCidr>): Array<Part> {
   if (nets.length === 0) return [];
-  const sorted = nets.slice().sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0);
+  nets.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0);
   const merged: Array<Part> = [];
-  let curStart = sorted[0].start;
-  let curEnd = sorted[0].end;
-  for (let i = 1; i < sorted.length; i++) {
-    const {start, end} = sorted[i];
+  let curStart = nets[0].start;
+  let curEnd = nets[0].end;
+  for (let i = 1; i < nets.length; i++) {
+    const {start, end} = nets[i];
     if (start <= curEnd + 1n) {
       if (end > curEnd) curEnd = end;
     } else {
@@ -304,7 +308,7 @@ function mergeIntervalsRaw(nets: Array<LeanParsedCidr>): Array<Part> {
 function mergeIntervals(nets: Array<LeanParsedCidr>): Array<Part> {
   const merged: Array<Part> = [];
   for (const part of mergeIntervalsRaw(nets)) {
-    subparts(part, merged);
+    subparts(part.start, part.end, merged);
   }
   return merged;
 }
@@ -379,11 +383,12 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
     const baseParts = mergeIntervalsRaw(baseByVersion[v]);
     const exclParts = mergeIntervalsRaw(exclByVersion[v]);
     const remaining = subtractSorted(baseParts, exclParts);
+    const aligned: Array<Part> = [];
     for (const part of remaining) {
-      const aligned = subparts(part);
-      for (const p of aligned) {
-        result.push(formatPart(p, v));
-      }
+      subparts(part.start, part.end, aligned);
+    }
+    for (const p of aligned) {
+      result.push(formatPart(p, v));
     }
   }
 
@@ -393,11 +398,27 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
 /* Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
   const arr: Array<Network> = Array.isArray(nets) ? nets : [nets];
+  const parsed = arr.map(parseCidrLean);
+  const byVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
+  for (const n of parsed) byVersion[n.version].push(n);
 
-  for (const net of mergeCidr(arr)) {
-    const {start, end, version} = parseCidrLean(net);
-    for (let number = start; number <= end; number++) {
-      yield normalizeIp(stringifyIp({number, version}));
+  for (const v of [4, 6] as Array<ValidIpVersion>) {
+    if (byVersion[v].length === 0) continue;
+    const intervals = mergeIntervalsRaw(byVersion[v]);
+    if (v === 4) {
+      for (const part of intervals) {
+        const startNum = Number(part.start);
+        const endNum = Number(part.end);
+        for (let n = startNum; n <= endNum; n++) {
+          yield formatIPv4Fast(n);
+        }
+      }
+    } else {
+      for (const part of intervals) {
+        for (let num = part.start; num <= part.end; num++) {
+          yield stringifyIp({number: num, version: 6});
+        }
+      }
     }
   }
 }
