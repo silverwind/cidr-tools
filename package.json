@@ -1,6 +1,6 @@
 {
   "name": "cidr-tools",
-  "version": "11.1.0",
+  "version": "11.1.1",
   "author": "silverwind <me@silverwind.io>",
   "description": "Tools to work with IPv4 and IPv6 CIDR",
   "repository": "silverwind/cidr-tools",
@@ -25,6 +25,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260305.1",
     "eslint": "9.39.3",
     "eslint-config-silverwind": "121.2.0",
+    "fast-cidr-tools": "0.3.4",
     "jest-extended": "7.0.0",
     "tsdown": "0.21.0",
     "tsdown-config-silverwind": "2.0.0",
