@@ -194,9 +194,19 @@ function parseCidrLean(str: Network): LeanParsedCidr {
 }
 
 
+// Count bit length of a bigint using Math.clz32, avoiding toString(2) string allocation.
+// Shifts down in 32-bit chunks until the value fits in uint32 for Math.clz32.
+function bigintBitLength(n: bigint): number {
+  if (n === 0n) return 0;
+  let len = 0;
+  if (n >= 0x10000000000000000n) { n >>= 64n; len = 64; }
+  while (n >= 0x100000000n) { n >>= 32n; len += 32; }
+  return len + 32 - Math.clz32(Number(n));
+}
+
 function biggestPowerOfTwo(num: bigint): bigint {
   if (num === 0n) return 0n;
-  return 1n << BigInt(num.toString(2).length - 1);
+  return 1n << BigInt(bigintBitLength(num) - 1);
 }
 
 function subparts(pStart: bigint, pEnd: bigint, output: Array<Part>): void {
@@ -220,6 +230,13 @@ function subparts(pStart: bigint, pEnd: bigint, output: Array<Part>): void {
   }
 
   const size = diff(pEnd, pStart);
+
+  // Fast path: if size is a power of 2 and start is aligned, emit directly
+  if ((size & (size - 1n)) === 0n && pStart % size === 0n) {
+    output.push({start: pStart, end: pEnd});
+    return;
+  }
+
   let biggest = biggestPowerOfTwo(size);
 
   let start: bigint;
@@ -278,7 +295,7 @@ function formatPart(part: Part, version: IpVersion): CIDR {
   }
   const ip = stringifyIp({number: part.start, version});
   const size = diff(part.end, part.start);
-  const hostBits = size <= 1n ? 0 : size.toString(2).length - 1;
+  const hostBits = size <= 1n ? 0 : bigintBitLength(size) - 1;
   const prefix = bits[version as ValidIpVersion] - hostBits;
   return `${ip}/${prefix}`;
 }
