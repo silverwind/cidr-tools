@@ -39,9 +39,34 @@ type Part = {
 };
 
 
-function uniq<T extends Array<any>>(arr: T): T {
-  const set = new Set(arr);
-  return set.size === arr.length ? arr : Array.from(set) as T;
+// Fast IPv4 parser: returns 32-bit number or -1 on failure
+function parseIPv4Fast(s: string): number {
+  let num = 0;
+  let octet = 0;
+  let dots = 0;
+  let digits = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 46) { // '.'
+      if (digits === 0 || octet > 255) return -1;
+      num = ((num << 8) | octet) >>> 0;
+      octet = 0;
+      dots++;
+      digits = 0;
+    } else if (c >= 48 && c <= 57) {
+      octet = octet * 10 + (c - 48);
+      digits++;
+    } else {
+      return -1;
+    }
+  }
+  if (dots !== 3 || digits === 0 || octet > 255) return -1;
+  return ((num << 8) | octet) >>> 0;
+}
+
+// Fast IPv4 formatter from 32-bit number
+function formatIPv4Fast(n: number): string {
+  return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
 }
 
 function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
@@ -110,6 +135,7 @@ export function parseCidr(str: Network): ParsedCidr {
 
 // Lightweight internal parser returning only {start, end, version}.
 // Skips stringifyIp() and string field construction.
+// Uses fast path for IPv4 addresses in standard dotted-decimal notation.
 function parseCidrLean(str: Network): LeanParsedCidr {
   const slashIndex = str.indexOf("/");
   let ipPart: string;
@@ -125,6 +151,18 @@ function parseCidrLean(str: Network): LeanParsedCidr {
   } else {
     ipPart = str;
     prefixNum = -1;
+  }
+
+  // Fast path for standard IPv4
+  if (!ipPart.includes(":")) {
+    const v4num = parseIPv4Fast(ipPart);
+    if (v4num !== -1) {
+      if (prefixNum === -1) prefixNum = 32;
+      const bigNum = BigInt(v4num);
+      const hostBits = 32 - prefixNum;
+      const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
+      return {start: bigNum & ~mask, end: bigNum | mask, version: 4};
+    }
   }
 
   const {number, version} = parseIp(ipPart);
@@ -229,6 +267,12 @@ function diff(a: bigint, b: bigint): bigint {
 }
 
 function formatPart(part: Part, version: IpVersion): CIDR {
+  if (version === 4) {
+    const ip = formatIPv4Fast(Number(part.start));
+    const sizeNum = Number(part.end - part.start) + 1;
+    const hostBits = sizeNum <= 1 ? 0 : sizeNum >= 0x100000000 ? 32 : 31 - Math.clz32(sizeNum);
+    return `${ip}/${32 - hostBits}`;
+  }
   const ip = stringifyIp({number: part.start, version});
   const size = diff(part.end, part.start);
   const hostBits = size <= 1n ? 0 : size.toString(2).length - 1;
@@ -303,7 +347,7 @@ function subtractSorted(bases: Array<Part>, excls: Array<Part>): Array<Part> {
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
-  const arr = uniq(Array.isArray(nets) ? nets : [nets]).map(parseCidrLean);
+  const arr = (Array.isArray(nets) ? nets : [nets]).map(parseCidrLean);
   const byVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
   for (const n of arr) byVersion[n.version].push(n);
 
@@ -319,8 +363,8 @@ export function mergeCidr(nets: Networks): Array<Network> {
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
 export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
-  const baseArr = uniq(Array.isArray(base) ? base : [base]).map(parseCidrLean);
-  const exclArr = uniq(Array.isArray(excl) ? excl : [excl]).map(parseCidrLean);
+  const baseArr = (Array.isArray(base) ? base : [base]).map(parseCidrLean);
+  const exclArr = (Array.isArray(excl) ? excl : [excl]).map(parseCidrLean);
 
   // Separate by version
   const baseByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
@@ -348,7 +392,7 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
 
 /* Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
-  const arr: Array<Network> = uniq(Array.isArray(nets) ? nets : [nets]);
+  const arr: Array<Network> = Array.isArray(nets) ? nets : [nets];
 
   for (const net of mergeCidr(arr)) {
     const {start, end, version} = parseCidrLean(net);
@@ -360,8 +404,8 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 
 /** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
 export function overlapCidr(a: Networks, b: Networks): boolean {
-  const aNets = uniq(Array.isArray(a) ? a : [a]).map(parseCidrLean);
-  const bNets = uniq(Array.isArray(b) ? b : [b]).map(parseCidrLean);
+  const aNets = (Array.isArray(a) ? a : [a]).map(parseCidrLean);
+  const bNets = (Array.isArray(b) ? b : [b]).map(parseCidrLean);
 
   // Separate by version in a single pass
   const aByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
@@ -388,8 +432,8 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 
 /** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
 export function containsCidr(a: Networks, b: Networks): boolean {
-  const aNets = uniq(Array.isArray(a) ? a : [a]).map(parseCidrLean);
-  const bNets = uniq(Array.isArray(b) ? b : [b]).map(parseCidrLean);
+  const aNets = (Array.isArray(a) ? a : [a]).map(parseCidrLean);
+  const bNets = (Array.isArray(b) ? b : [b]).map(parseCidrLean);
 
   // Separate by version in a single pass
   const aByVersion: {4: Array<LeanParsedCidr>, 6: Array<LeanParsedCidr>} = {4: [], 6: []};
