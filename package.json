@@ -13,7 +13,7 @@
   "files": [
     "dist"
   ],
-  "packageManager": "pnpm@10.30.2",
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=18"
   },
@@ -21,18 +21,18 @@
     "ip-bigint": "^8.2.8"
   },
   "devDependencies": {
-    "@types/node": "25.3.0",
-    "@typescript/native-preview": "7.0.0-dev.20260224.1",
+    "@types/node": "25.3.3",
+    "@typescript/native-preview": "7.0.0-dev.20260305.1",
     "eslint": "9.39.3",
-    "eslint-config-silverwind": "121.1.3",
+    "eslint-config-silverwind": "121.2.0",
     "jest-extended": "7.0.0",
-    "tsdown": "0.20.3",
-    "tsdown-config-silverwind": "1.7.5",
+    "tsdown": "0.21.0",
+    "tsdown-config-silverwind": "2.0.0",
     "typescript": "5.9.3",
     "typescript-config-silverwind": "15.0.0",
-    "updates": "17.6.2",
+    "updates": "17.8.1",
     "updates-config-silverwind": "1.0.3",
-    "versions": "14.2.0",
+    "versions": "14.2.1",
     "vitest": "4.0.18",
     "vitest-config-silverwind": "10.6.3"
   }
