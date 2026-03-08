@@ -18,6 +18,10 @@ lint-fix: node_modules
 	pnpm exec eslint-silverwind --color . --fix
 	pnpm exec tsgo
 
+.PHONY: bench
+bench: node_modules
+	@node bench.ts
+
 .PHONY: test
 test: node_modules
 	pnpm exec vitest
