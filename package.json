@@ -13,24 +13,24 @@
   "files": [
     "dist"
   ],
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@10.31.0",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "ip-bigint": "^8.2.9"
+    "ip-bigint": "^8.2.10"
   },
   "devDependencies": {
     "@types/node": "25.3.5",
-    "@typescript/native-preview": "7.0.0-dev.20260306.1",
-    "eslint": "9.39.3",
-    "eslint-config-silverwind": "122.0.4",
+    "@typescript/native-preview": "7.0.0-dev.20260308.1",
+    "eslint": "9.39.4",
+    "eslint-config-silverwind": "122.1.2",
     "jest-extended": "7.0.0",
     "tsdown": "0.21.0",
     "tsdown-config-silverwind": "2.0.0",
     "typescript": "5.9.3",
     "typescript-config-silverwind": "15.0.0",
-    "updates": "17.8.2",
+    "updates": "17.9.0",
     "updates-config-silverwind": "1.0.3",
     "versions": "14.2.1",
     "vitest": "4.0.18",
