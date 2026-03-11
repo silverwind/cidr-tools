@@ -13,7 +13,7 @@
   "files": [
     "dist"
   ],
-  "packageManager": "pnpm@10.31.0",
+  "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=18"
   },
@@ -21,13 +21,13 @@
     "ip-bigint": "^8.2.12"
   },
   "devDependencies": {
-    "@types/node": "25.3.5",
-    "@typescript/native-preview": "7.0.0-dev.20260308.1",
+    "@types/node": "25.4.0",
+    "@typescript/native-preview": "7.0.0-dev.20260311.1",
     "eslint": "9.39.4",
-    "eslint-config-silverwind": "122.1.2",
+    "eslint-config-silverwind": "124.0.7",
     "jest-extended": "7.0.0",
-    "tsdown": "0.21.0",
-    "tsdown-config-silverwind": "2.0.0",
+    "tsdown": "0.21.2",
+    "tsdown-config-silverwind": "2.0.1",
     "typescript": "5.9.3",
     "typescript-config-silverwind": "15.0.0",
     "updates": "17.9.0",
