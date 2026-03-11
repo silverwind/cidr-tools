@@ -81,8 +81,26 @@ function formatIPv4Fast(n: number): string {
   return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
 }
 
+// Parse prefix number from string after slash, returns -1 if no slash
+function parsePrefixNum(str: string, slashIndex: number): number {
+  if (slashIndex === -1) return -1;
+  if (slashIndex + 1 >= str.length) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+  let prefixNum = 0;
+  for (let i = slashIndex + 1; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 48 || c > 57) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+    prefixNum = prefixNum * 10 + (c - 48);
+  }
+  return prefixNum;
+}
+
 function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
   const {start, end, prefix, version, prefixPresent} = parseCidr(cidr);
+  // IPv4 fast path: compress/hexify are no-ops for IPv4, skip normalizeIp round-trip
+  if (version === 4) {
+    const ip = formatIPv4Fast(Number(start));
+    return (start !== end || prefixPresent) ? `${ip}/${prefix}` : ip;
+  }
   if (start !== end || prefixPresent) { // cidr
     // set network address to first address
     const ip = normalizeIp(stringifyIp({number: start, version}), {compress, hexify});
@@ -107,20 +125,46 @@ export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?
 export function parseCidr(str: Network): ParsedCidr {
   const slashIndex = str.indexOf("/");
   let ipPart: string;
-  let prefix: string;
+  let prefixNum: number;
   let prefixPresent: boolean;
 
   if (slashIndex !== -1) {
     ipPart = str.substring(0, slashIndex);
-    prefix = str.substring(slashIndex + 1);
-    if (!/^[0-9]+$/.test(prefix)) {
-      throw new Error(`Network is not a CIDR or IP: "${str}"`);
-    }
+    prefixNum = parsePrefixNum(str, slashIndex);
     prefixPresent = true;
   } else {
     ipPart = str;
+    prefixNum = -1;
     prefixPresent = false;
-    prefix = "";
+  }
+
+  // Fast path for standard IPv4: avoid ip-bigint entirely
+  if (!ipPart.includes(":")) {
+    const v4num = parseIPv4Fast(ipPart);
+    if (v4num !== -1) {
+      if (prefixNum === -1) prefixNum = 32;
+      const ip = formatIPv4Fast(v4num);
+      const prefix = String(prefixNum);
+      const hostBits = 32 - prefixNum;
+      let startNum: number, endNum: number;
+      if (hostBits >= 32) {
+        startNum = 0;
+        endNum = 0xFFFFFFFF;
+      } else {
+        const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
+        startNum = (v4num & ~mask) >>> 0;
+        endNum = (v4num | mask) >>> 0;
+      }
+      return {
+        cidr: `${ip}/${prefix}`,
+        ip,
+        version: 4,
+        prefix,
+        prefixPresent,
+        start: BigInt(startNum),
+        end: BigInt(endNum),
+      };
+    }
   }
 
   const {number, version, ipv4mapped, scopeid} = parseIp(ipPart);
@@ -128,13 +172,14 @@ export function parseCidr(str: Network): ParsedCidr {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
-  if (!prefixPresent) {
-    prefix = String(bits[version as ValidIpVersion]);
+  if (prefixNum === -1) {
+    prefixNum = bits[version as ValidIpVersion];
   }
 
+  const prefix = String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
   const numBits = bits[version as ValidIpVersion];
-  const hostBits = numBits - Number(prefix);
+  const hostBits = numBits - prefixNum;
   const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
   return {
     cidr: `${ip}/${prefix}`,
@@ -158,14 +203,7 @@ function parseCidrLean(str: Network): LeanParsedCidr {
 
   if (slashIndex !== -1) {
     ipPart = str.substring(0, slashIndex);
-    // Inline prefix parsing: validate digits and compute number in one pass
-    if (slashIndex + 1 >= str.length) throw new Error(`Network is not a CIDR or IP: "${str}"`);
-    prefixNum = 0;
-    for (let i = slashIndex + 1; i < str.length; i++) {
-      const c = str.charCodeAt(i);
-      if (c < 48 || c > 57) throw new Error(`Network is not a CIDR or IP: "${str}"`);
-      prefixNum = prefixNum * 10 + (c - 48);
-    }
+    prefixNum = parsePrefixNum(str, slashIndex);
   } else {
     ipPart = str;
     prefixNum = -1;
@@ -609,6 +647,14 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 
 /** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
 export function overlapCidr(a: Networks, b: Networks): boolean {
+  // Fast path for single-vs-single (most common case)
+  if (!Array.isArray(a) && !Array.isArray(b)) {
+    const pa = parseCidrLean(a);
+    const pb = parseCidrLean(b);
+    if (pa.version !== pb.version) return false;
+    return pa.start <= pb.end && pb.start <= pa.end;
+  }
+
   const aArr = Array.isArray(a) ? a : [a];
   const bArr = Array.isArray(b) ? b : [b];
 
@@ -650,6 +696,14 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 
 /** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
 export function containsCidr(a: Networks, b: Networks): boolean {
+  // Fast path for single-vs-single (most common case)
+  if (!Array.isArray(a) && !Array.isArray(b)) {
+    const pa = parseCidrLean(a);
+    const pb = parseCidrLean(b);
+    if (pa.version !== pb.version) return false;
+    return pa.start <= pb.start && pa.end >= pb.end;
+  }
+
   const aArr = Array.isArray(a) ? a : [a];
   const bArr = Array.isArray(b) ? b : [b];
 

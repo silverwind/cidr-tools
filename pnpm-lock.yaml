@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       ip-bigint:
-        specifier: ^8.2.10
-        version: 8.2.10
+        specifier: ^8.2.12
+        version: 8.2.12
     devDependencies:
       '@types/node':
         specifier: 25.3.5
@@ -1061,8 +1061,8 @@ packages:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
 
-  ip-bigint@8.2.10:
-    resolution: {integrity: sha512-GifRWa+yDO6HknxbKKG0lKCAWsXZMarYfLQMrFOrImytgnqKnAH/mdo3rDY3eQg2mjJeqxn293vU7STk5+b5Cg==}
+  ip-bigint@8.2.12:
+    resolution: {integrity: sha512-WYw7ZQKFi07D9Wv26bcJSUMLdKJvvWMueuLUlW0/7ezQTPYj4ZCrosc6I5gVYuZ+m37Rs48oiK3Zaw1Ig1oOrQ==}
     engines: {node: '>=18'}
 
   is-bun-module@2.0.0:
@@ -2294,7 +2294,7 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  ip-bigint@8.2.10: {}
+  ip-bigint@8.2.12: {}
 
   is-bun-module@2.0.0:
     dependencies:

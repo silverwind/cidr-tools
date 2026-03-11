@@ -17,8 +17,12 @@ for (let i = 0; i < 1e4; i++) {
   excludeCidr(["fe80::/10"], ["fe80:1::/32"]);
   overlapCidr(v4cidrs, ["10.1.0.0/16"]);
   overlapCidr(v6cidrs, ["fe80:1::/32"]);
+  overlapCidr("10.0.0.0/8", "10.1.0.0/16");
+  overlapCidr("fe80::/10", "fe80:1::/32");
   containsCidr("10.0.0.0/8", "10.1.0.0/16");
   containsCidr("fe80::/10", "fe80:1::/32");
+  containsCidr(v4cidrs, "10.1.0.0/16");
+  containsCidr(v6cidrs, "fe80:1::/32");
 }
 for (let i = 0; i < 1e3; i++) {
   Array.from(expandCidr("10.0.0.0/24"));
@@ -59,19 +63,35 @@ console.info(`excludeCidr v6: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
 for (let i = 0; i < 3e5; i++) overlapCidr(v4cidrs, ["10.1.0.0/16"]);
-console.info(`overlapCidr v4: ${Math.round(performance.now() - t)}ms`);
+console.info(`overlapCidr v4 array: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
 for (let i = 0; i < 1e5; i++) overlapCidr(v6cidrs, ["fe80:1::/32"]);
-console.info(`overlapCidr v6: ${Math.round(performance.now() - t)}ms`);
+console.info(`overlapCidr v6 array: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (let i = 0; i < 1e6; i++) overlapCidr("10.0.0.0/8", "10.1.0.0/16");
+console.info(`overlapCidr v4 single: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (let i = 0; i < 5e5; i++) overlapCidr("fe80::/10", "fe80:1::/32");
+console.info(`overlapCidr v6 single: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (let i = 0; i < 3e5; i++) containsCidr(v4cidrs, "10.1.0.0/16");
+console.info(`containsCidr v4 array: ${Math.round(performance.now() - t)}ms`);
+
+t = performance.now();
+for (let i = 0; i < 1e5; i++) containsCidr(v6cidrs, "fe80:1::/32");
+console.info(`containsCidr v6 array: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
 for (let i = 0; i < 1e6; i++) containsCidr("10.0.0.0/8", "10.1.0.0/16");
-console.info(`containsCidr v4: ${Math.round(performance.now() - t)}ms`);
+console.info(`containsCidr v4 single: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
 for (let i = 0; i < 5e5; i++) containsCidr("fe80::/10", "fe80:1::/32");
-console.info(`containsCidr v6: ${Math.round(performance.now() - t)}ms`);
+console.info(`containsCidr v6 single: ${Math.round(performance.now() - t)}ms`);
 
 t = performance.now();
 for (let i = 0; i < 1e4; i++) Array.from(expandCidr("10.0.0.0/24"));
