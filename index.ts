@@ -2,6 +2,11 @@ import {parseIp, stringifyIp, normalizeIp} from "ip-bigint";
 
 const bits = {4: 32, 6: 128};
 
+// Pre-computed lookup tables for fast string formatting
+const octetStrings: string[] = Array.from({length: 256}, (_, i) => String(i));
+const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
+const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
+
 type IPv4Address = string;
 type IPv6Address = string;
 type IPv4CIDR = string;
@@ -51,13 +56,14 @@ type LeanParsedCidr6 = {
 type LeanParsedCidr = LeanParsedCidr4 | LeanParsedCidr6;
 
 
-// Fast IPv4 parser: returns 32-bit number or -1 on failure
-function parseIPv4Fast(s: string): number {
+// Fast IPv4 parser: returns 32-bit number or -1 on failure.
+// Parses from s[0] to s[end-1], avoiding substring allocation.
+function parseIPv4Fast(s: string, end: number): number {
   let num = 0;
   let octet = 0;
   let dots = 0;
   let digits = 0;
-  for (let i = 0; i < s.length; i++) {
+  for (let i = 0; i < end; i++) {
     const c = s.charCodeAt(i);
     if (c === 46) { // '.'
       if (digits === 0 || octet > 255) return -1;
@@ -76,9 +82,9 @@ function parseIPv4Fast(s: string): number {
   return ((num << 8) | octet) >>> 0;
 }
 
-// Fast IPv4 formatter from 32-bit number
+// Fast IPv4 formatter from 32-bit number using pre-computed octet strings
 function formatIPv4Fast(n: number): string {
-  return `${(n >>> 24) & 0xff}.${(n >>> 16) & 0xff}.${(n >>> 8) & 0xff}.${n & 0xff}`;
+  return `${octetStrings[(n >>> 24) & 0xff]}.${octetStrings[(n >>> 16) & 0xff]}.${octetStrings[(n >>> 8) & 0xff]}.${octetStrings[n & 0xff]}`;
 }
 
 // Parse prefix number from string after slash, returns -1 if no slash
@@ -94,18 +100,51 @@ function parsePrefixNum(str: string, slashIndex: number): number {
   return prefixNum;
 }
 
-function doNormalize(cidr: Network, {compress = true, hexify = false}: NormalizeOpts = {}): Network {
+// Module-level scratch variables for zero-allocation IPv4 range parsing.
+// Used by parseIPv4Range; callers must save values before a second call.
+let rangeV4Start = 0;
+let rangeV4End = 0;
+let rangeV4Prefix = 0;
+let rangeSlashIndex = -1;
+
+// Parse IPv4 CIDR/IP into rangeV4* scratch vars without object allocation.
+// Returns true on success (standard dotted-decimal IPv4), false otherwise.
+function parseIPv4Range(str: string): boolean {
+  rangeSlashIndex = str.indexOf("/");
+  const ipEnd = rangeSlashIndex !== -1 ? rangeSlashIndex : str.length;
+  const v4num = parseIPv4Fast(str, ipEnd);
+  if (v4num === -1) return false;
+  rangeV4Prefix = rangeSlashIndex !== -1 ? parsePrefixNum(str, rangeSlashIndex) : 32;
+  const hostBits = 32 - rangeV4Prefix;
+  if (hostBits >= 32) {
+    rangeV4Start = 0;
+    rangeV4End = 0xFFFFFFFF;
+  } else {
+    const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
+    rangeV4Start = (v4num & ~mask) >>> 0;
+    rangeV4End = (v4num | mask) >>> 0;
+  }
+  return true;
+}
+
+function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
+  // IPv4 fast path: skip full parseCidr, avoid BigInt allocation
+  if (parseIPv4Range(cidr)) {
+    const ip = formatIPv4Fast(rangeV4Start);
+    return rangeSlashIndex !== -1 ? ip + prefixStrings[rangeV4Prefix] : ip;
+  }
+
+  // Full path for IPv6 and non-standard IPv4
   const {start, end, prefix, version, prefixPresent} = parseCidr(cidr);
-  // IPv4 fast path: compress/hexify are no-ops for IPv4, skip normalizeIp round-trip
   if (version === 4) {
     const ip = formatIPv4Fast(Number(start));
-    return (start !== end || prefixPresent) ? `${ip}/${prefix}` : ip;
+    return (start !== end || prefixPresent) ? ip + prefixStrings[Number(prefix)] : ip;
   }
-  if (start !== end || prefixPresent) { // cidr
-    // set network address to first address
+  const {compress = true, hexify = false} = opts || {};
+  if (start !== end || prefixPresent) {
     const ip = normalizeIp(stringifyIp({number: start, version}), {compress, hexify});
-    return `${ip}/${prefix}`;
-  } else { // single ip
+    return ip + prefixStrings[Number(prefix)];
+  } else {
     return normalizeIp(cidr, {compress, hexify});
   }
 }
@@ -124,48 +163,39 @@ export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?
 /** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
 export function parseCidr(str: Network): ParsedCidr {
   const slashIndex = str.indexOf("/");
-  let ipPart: string;
-  let prefixNum: number;
-  let prefixPresent: boolean;
+  const ipEnd = slashIndex !== -1 ? slashIndex : str.length;
+  const prefixPresent = slashIndex !== -1;
 
-  if (slashIndex !== -1) {
-    ipPart = str.substring(0, slashIndex);
-    prefixNum = parsePrefixNum(str, slashIndex);
-    prefixPresent = true;
-  } else {
-    ipPart = str;
-    prefixNum = -1;
-    prefixPresent = false;
-  }
-
-  // Fast path for standard IPv4: avoid ip-bigint entirely
-  if (!ipPart.includes(":")) {
-    const v4num = parseIPv4Fast(ipPart);
-    if (v4num !== -1) {
-      if (prefixNum === -1) prefixNum = 32;
-      const ip = formatIPv4Fast(v4num);
-      const prefix = String(prefixNum);
-      const hostBits = 32 - prefixNum;
-      let startNum: number, endNum: number;
-      if (hostBits >= 32) {
-        startNum = 0;
-        endNum = 0xFFFFFFFF;
-      } else {
-        const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
-        startNum = (v4num & ~mask) >>> 0;
-        endNum = (v4num | mask) >>> 0;
-      }
-      return {
-        cidr: `${ip}/${prefix}`,
-        ip,
-        version: 4,
-        prefix,
-        prefixPresent,
-        start: BigInt(startNum),
-        end: BigInt(endNum),
-      };
+  // Fast path for standard IPv4: try parsing directly without substring
+  const v4num = parseIPv4Fast(str, ipEnd);
+  if (v4num !== -1) {
+    const prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : 32;
+    const ip = formatIPv4Fast(v4num);
+    const prefix = prefixNumStrings[prefixNum];
+    const hostBits = 32 - prefixNum;
+    let startNum: number, endNum: number;
+    if (hostBits >= 32) {
+      startNum = 0;
+      endNum = 0xFFFFFFFF;
+    } else {
+      const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
+      startNum = (v4num & ~mask) >>> 0;
+      endNum = (v4num | mask) >>> 0;
     }
+    return {
+      cidr: ip + prefixStrings[prefixNum],
+      ip,
+      version: 4,
+      prefix,
+      prefixPresent,
+      start: BigInt(startNum),
+      end: BigInt(endNum),
+    };
   }
+
+  // Fallback: need substring for ip-bigint
+  const ipPart = prefixPresent ? str.substring(0, slashIndex) : str;
+  let prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : -1;
 
   const {number, version, ipv4mapped, scopeid} = parseIp(ipPart);
   if (!version) {
@@ -176,13 +206,13 @@ export function parseCidr(str: Network): ParsedCidr {
     prefixNum = bits[version as ValidIpVersion];
   }
 
-  const prefix = String(prefixNum);
+  const prefix = prefixNumStrings[prefixNum];
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
   const numBits = bits[version as ValidIpVersion];
   const hostBits = numBits - prefixNum;
   const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
   return {
-    cidr: `${ip}/${prefix}`,
+    cidr: ip + prefixStrings[prefixNum],
     ip,
     version: version as ValidIpVersion,
     prefix,
@@ -197,33 +227,15 @@ export function parseCidr(str: Network): ParsedCidr {
 // Uses fast path for IPv4 addresses in standard dotted-decimal notation.
 // Returns number start/end for IPv4, bigint start/end for IPv6.
 function parseCidrLean(str: Network): LeanParsedCidr {
-  const slashIndex = str.indexOf("/");
-  let ipPart: string;
-  let prefixNum: number;
-
-  if (slashIndex !== -1) {
-    ipPart = str.substring(0, slashIndex);
-    prefixNum = parsePrefixNum(str, slashIndex);
-  } else {
-    ipPart = str;
-    prefixNum = -1;
+  // Fast path for standard IPv4: reuse parseIPv4Range to avoid duplication
+  if (parseIPv4Range(str)) {
+    return {start: rangeV4Start, end: rangeV4End, version: 4};
   }
 
-  // Fast path for standard IPv4
-  if (!ipPart.includes(":")) {
-    const v4num = parseIPv4Fast(ipPart);
-    if (v4num !== -1) {
-      if (prefixNum === -1) prefixNum = 32;
-      const hostBits = 32 - prefixNum;
-      if (hostBits >= 32) return {start: 0, end: 0xFFFFFFFF, version: 4};
-      const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
-      return {
-        start: (v4num & ~mask) >>> 0,
-        end: (v4num | mask) >>> 0,
-        version: 4,
-      };
-    }
-  }
+  // Fallback: need substring for ip-bigint
+  const slashIndex = rangeSlashIndex; // reuse from parseIPv4Range call
+  const ipPart = slashIndex !== -1 ? str.substring(0, slashIndex) : str;
+  let prefixNum = slashIndex !== -1 ? parsePrefixNum(str, slashIndex) : -1;
 
   const {number, version} = parseIp(ipPart);
   if (!version) {
@@ -414,14 +426,14 @@ function formatPart4(part: Part4): CIDR {
   const ip = formatIPv4Fast(part.start);
   const size = part.end - part.start + 1;
   const hostBits = size <= 1 ? 0 : size >= 0x100000000 ? 32 : 31 - Math.clz32(size);
-  return `${ip}/${32 - hostBits}`;
+  return ip + prefixStrings[32 - hostBits];
 }
 
 function formatPart6(part: Part6): CIDR {
   const ip = stringifyIp({number: part.start, version: 6});
   const size = part.end - part.start + 1n;
   const hostBits = size <= 1n ? 0 : bigintBitLength(size) - 1;
-  return `${ip}/${128 - hostBits}`;
+  return ip + prefixStrings[128 - hostBits];
 }
 
 // IPv4 number-based merge intervals
@@ -649,6 +661,14 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 export function overlapCidr(a: Networks, b: Networks): boolean {
   // Fast path for single-vs-single (most common case)
   if (!Array.isArray(a) && !Array.isArray(b)) {
+    // Zero-allocation IPv4 fast path
+    if (parseIPv4Range(a)) {
+      const startA = rangeV4Start, endA = rangeV4End;
+      if (parseIPv4Range(b)) {
+        return startA <= rangeV4End && rangeV4Start <= endA;
+      }
+    }
+    // Fallback for IPv6 and non-standard IPv4
     const pa = parseCidrLean(a);
     const pb = parseCidrLean(b);
     if (pa.version !== pb.version) return false;
@@ -671,23 +691,49 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 
   // IPv4
   if (v4a.length > 0 && v4b.length > 0) {
-    v4a.sort((x, y) => x.start - y.start);
-    v4b.sort((x, y) => x.start - y.start);
-    let i = 0, j = 0;
-    while (i < v4a.length && j < v4b.length) {
-      if (v4a[i].start <= v4b[j].end && v4b[j].start <= v4a[i].end) return true;
-      if (v4a[i].end < v4b[j].end) i++; else j++;
+    // Linear scan when one side has a single element (avoids sorting)
+    if (v4b.length === 1) {
+      const bs = v4b[0].start, be = v4b[0].end;
+      for (const el of v4a) {
+        if (el.start <= be && bs <= el.end) return true;
+      }
+    } else if (v4a.length === 1) {
+      const as = v4a[0].start, ae = v4a[0].end;
+      for (const el of v4b) {
+        if (as <= el.end && el.start <= ae) return true;
+      }
+    } else {
+      v4a.sort((x, y) => x.start - y.start);
+      v4b.sort((x, y) => x.start - y.start);
+      let i = 0, j = 0;
+      while (i < v4a.length && j < v4b.length) {
+        if (v4a[i].start <= v4b[j].end && v4b[j].start <= v4a[i].end) return true;
+        if (v4a[i].end < v4b[j].end) i++; else j++;
+      }
     }
   }
 
   // IPv6
   if (v6a.length > 0 && v6b.length > 0) {
-    v6a.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
-    v6b.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
-    let i = 0, j = 0;
-    while (i < v6a.length && j < v6b.length) {
-      if (v6a[i].start <= v6b[j].end && v6b[j].start <= v6a[i].end) return true;
-      if (v6a[i].end < v6b[j].end) i++; else j++;
+    // Linear scan when one side has a single element (avoids sorting)
+    if (v6b.length === 1) {
+      const bs = v6b[0].start, be = v6b[0].end;
+      for (const el of v6a) {
+        if (el.start <= be && bs <= el.end) return true;
+      }
+    } else if (v6a.length === 1) {
+      const as = v6a[0].start, ae = v6a[0].end;
+      for (const el of v6b) {
+        if (as <= el.end && el.start <= ae) return true;
+      }
+    } else {
+      v6a.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+      v6b.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+      let i = 0, j = 0;
+      while (i < v6a.length && j < v6b.length) {
+        if (v6a[i].start <= v6b[j].end && v6b[j].start <= v6a[i].end) return true;
+        if (v6a[i].end < v6b[j].end) i++; else j++;
+      }
     }
   }
 
@@ -698,6 +744,14 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 export function containsCidr(a: Networks, b: Networks): boolean {
   // Fast path for single-vs-single (most common case)
   if (!Array.isArray(a) && !Array.isArray(b)) {
+    // Zero-allocation IPv4 fast path
+    if (parseIPv4Range(a)) {
+      const startA = rangeV4Start, endA = rangeV4End;
+      if (parseIPv4Range(b)) {
+        return startA <= rangeV4Start && endA >= rangeV4End;
+      }
+    }
+    // Fallback for IPv6 and non-standard IPv4
     const pa = parseCidrLean(a);
     const pb = parseCidrLean(b);
     if (pa.version !== pb.version) return false;
