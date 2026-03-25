@@ -4,6 +4,7 @@ const bits = {4: 32, 6: 128};
 
 // Pre-computed lookup tables for fast string formatting
 const octetStrings: string[] = Array.from({length: 256}, (_, i) => String(i));
+const octetDotStrings: string[] = Array.from({length: 256}, (_, i) => `${i}.`);
 const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
 const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
 
@@ -55,6 +56,10 @@ type LeanParsedCidr6 = {
 
 type LeanParsedCidr = LeanParsedCidr4 | LeanParsedCidr6;
 
+const cmpV4StartEnd = (a: LeanParsedCidr4, b: LeanParsedCidr4): number => a.start - b.start || a.end - b.end;
+const cmpV4Start = (a: LeanParsedCidr4, b: LeanParsedCidr4): number => a.start - b.start;
+const cmpV6StartEnd = (a: LeanParsedCidr6, b: LeanParsedCidr6): number => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0;
+const cmpV6Start = (a: LeanParsedCidr6, b: LeanParsedCidr6): number => a.start > b.start ? 1 : a.start < b.start ? -1 : 0;
 
 // Fast IPv4 parser: returns 32-bit number or -1 on failure.
 // Parses from s[0] to s[end-1], avoiding substring allocation.
@@ -67,7 +72,7 @@ function parseIPv4Fast(s: string, end: number): number {
     const c = s.charCodeAt(i);
     if (c === 46) { // '.'
       if (digits === 0 || octet > 255) return -1;
-      num = ((num << 8) | octet) >>> 0;
+      num = (num << 8) | octet;
       octet = 0;
       dots++;
       digits = 0;
@@ -84,7 +89,7 @@ function parseIPv4Fast(s: string, end: number): number {
 
 // Fast IPv4 formatter from 32-bit number using pre-computed octet strings
 function formatIPv4Fast(n: number): string {
-  return `${octetStrings[(n >>> 24) & 0xff]}.${octetStrings[(n >>> 16) & 0xff]}.${octetStrings[(n >>> 8) & 0xff]}.${octetStrings[n & 0xff]}`;
+  return octetDotStrings[(n >>> 24) & 0xff] + octetDotStrings[(n >>> 16) & 0xff] + octetDotStrings[(n >>> 8) & 0xff] + octetStrings[n & 0xff];
 }
 
 // Parse prefix number from string after slash, returns -1 if no slash
@@ -423,23 +428,17 @@ function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
 }
 
 function formatPart4(part: Part4): CIDR {
-  const ip = formatIPv4Fast(part.start);
-  const size = part.end - part.start + 1;
-  const hostBits = size <= 1 ? 0 : size >= 0x100000000 ? 32 : 31 - Math.clz32(size);
-  return ip + prefixStrings[32 - hostBits];
+  return formatIPv4Fast(part.start) + prefixStrings[Math.clz32(part.end - part.start)];
 }
 
 function formatPart6(part: Part6): CIDR {
-  const ip = stringifyIp({number: part.start, version: 6});
-  const size = part.end - part.start + 1n;
-  const hostBits = size <= 1n ? 0 : bigintBitLength(size) - 1;
-  return ip + prefixStrings[128 - hostBits];
+  return stringifyIp({number: part.start, version: 6}) + prefixStrings[128 - bigintBitLength(part.end - part.start)];
 }
 
 // IPv4 number-based merge intervals
 function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
   if (nets.length === 0) return [];
-  nets.sort((a, b) => a.start - b.start || a.end - b.end);
+  nets.sort(cmpV4StartEnd);
   const merged: Part4[] = [];
   let curStart = nets[0].start;
   let curEnd = nets[0].end;
@@ -460,7 +459,7 @@ function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
 // IPv6 bigint-based merge intervals
 function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Part6[] {
   if (nets.length === 0) return [];
-  nets.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : a.end > b.end ? 1 : a.end < b.end ? -1 : 0);
+  nets.sort(cmpV6StartEnd);
   const merged: Part6[] = [];
   let curStart = nets[0].start;
   let curEnd = nets[0].end;
@@ -642,16 +641,25 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 
   if (v4.length > 0) {
     for (const part of mergeIntervalsRaw4(v4)) {
+      let prevHigh = -1;
+      let prefix = "";
       for (let n = part.start; n <= part.end; n++) {
-        yield formatIPv4Fast(n);
+        const high = n >>> 8;
+        if (high !== prevHigh) {
+          prefix = octetDotStrings[(n >>> 24) & 0xff] + octetDotStrings[(n >>> 16) & 0xff] + octetDotStrings[(n >>> 8) & 0xff];
+          prevHigh = high;
+        }
+        yield prefix + octetStrings[n & 0xff];
       }
     }
   }
 
   if (v6.length > 0) {
+    const ipObj = {number: 0n, version: 6 as const};
     for (const part of mergeIntervalsRaw6(v6)) {
       for (let num = part.start; num <= part.end; num++) {
-        yield stringifyIp({number: num, version: 6});
+        ipObj.number = num;
+        yield stringifyIp(ipObj);
       }
     }
   }
@@ -703,8 +711,8 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
         if (as <= el.end && el.start <= ae) return true;
       }
     } else {
-      v4a.sort((x, y) => x.start - y.start);
-      v4b.sort((x, y) => x.start - y.start);
+      v4a.sort(cmpV4Start);
+      v4b.sort(cmpV4Start);
       let i = 0, j = 0;
       while (i < v4a.length && j < v4b.length) {
         if (v4a[i].start <= v4b[j].end && v4b[j].start <= v4a[i].end) return true;
@@ -727,8 +735,8 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
         if (as <= el.end && el.start <= ae) return true;
       }
     } else {
-      v6a.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
-      v6b.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
+      v6a.sort(cmpV6Start);
+      v6b.sort(cmpV6Start);
       let i = 0, j = 0;
       while (i < v6a.length && j < v6b.length) {
         if (v6a[i].start <= v6b[j].end && v6b[j].start <= v6a[i].end) return true;
@@ -775,54 +783,74 @@ export function containsCidr(a: Networks, b: Networks): boolean {
   // IPv4
   if (v4b.length > 0) {
     if (v4a.length === 0) return false;
-    v4a.sort((x, y) => x.start - y.start);
 
-    const maxEnd = new Array<number>(v4a.length);
-    maxEnd[0] = v4a[0].end;
-    for (let i = 1; i < v4a.length; i++) {
-      maxEnd[i] = Math.max(v4a[i].end, maxEnd[i - 1]);
-    }
-
-    for (const target of v4b) {
-      let lo = 0, hi = v4a.length - 1;
-      let idx = -1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        if (v4a[mid].start <= target.start) {
-          idx = mid;
-          lo = mid + 1;
-        } else {
-          hi = mid - 1;
-        }
+    if (v4b.length === 1) {
+      const ts = v4b[0].start, te = v4b[0].end;
+      let found = false;
+      for (const a of v4a) {
+        if (a.start <= ts && a.end >= te) { found = true; break; }
       }
-      if (idx < 0 || maxEnd[idx] < target.end) return false;
+      if (!found) return false;
+    } else {
+      v4a.sort(cmpV4Start);
+
+      const maxEnd = new Array<number>(v4a.length);
+      maxEnd[0] = v4a[0].end;
+      for (let i = 1; i < v4a.length; i++) {
+        maxEnd[i] = Math.max(v4a[i].end, maxEnd[i - 1]);
+      }
+
+      for (const target of v4b) {
+        let lo = 0, hi = v4a.length - 1;
+        let idx = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (v4a[mid].start <= target.start) {
+            idx = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        if (idx < 0 || maxEnd[idx] < target.end) return false;
+      }
     }
   }
 
   // IPv6
   if (v6b.length > 0) {
     if (v6a.length === 0) return false;
-    v6a.sort((x, y) => x.start > y.start ? 1 : x.start < y.start ? -1 : 0);
 
-    const maxEnd = new Array<bigint>(v6a.length);
-    maxEnd[0] = v6a[0].end;
-    for (let i = 1; i < v6a.length; i++) {
-      maxEnd[i] = v6a[i].end > maxEnd[i - 1] ? v6a[i].end : maxEnd[i - 1]; // eslint-disable-line unicorn/prefer-math-min-max -- BigInt not supported by Math.max
-    }
-
-    for (const target of v6b) {
-      let lo = 0, hi = v6a.length - 1;
-      let idx = -1;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        if (v6a[mid].start <= target.start) {
-          idx = mid;
-          lo = mid + 1;
-        } else {
-          hi = mid - 1;
-        }
+    if (v6b.length === 1) {
+      const ts = v6b[0].start, te = v6b[0].end;
+      let found = false;
+      for (const a of v6a) {
+        if (a.start <= ts && a.end >= te) { found = true; break; }
       }
-      if (idx < 0 || maxEnd[idx] < target.end) return false;
+      if (!found) return false;
+    } else {
+      v6a.sort(cmpV6Start);
+
+      const maxEnd = new Array<bigint>(v6a.length);
+      maxEnd[0] = v6a[0].end;
+      for (let i = 1; i < v6a.length; i++) {
+        maxEnd[i] = v6a[i].end > maxEnd[i - 1] ? v6a[i].end : maxEnd[i - 1]; // eslint-disable-line unicorn/prefer-math-min-max -- BigInt not supported by Math.max
+      }
+
+      for (const target of v6b) {
+        let lo = 0, hi = v6a.length - 1;
+        let idx = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (v6a[mid].start <= target.start) {
+            idx = mid;
+            lo = mid + 1;
+          } else {
+            hi = mid - 1;
+          }
+        }
+        if (idx < 0 || maxEnd[idx] < target.end) return false;
+      }
     }
   }
 

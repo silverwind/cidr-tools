@@ -18,7 +18,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "ip-bigint": "^8.3.1"
+    "ip-bigint": "^8.3.2"
   },
   "devDependencies": {
     "@types/node": "25.5.0",
