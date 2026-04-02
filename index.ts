@@ -8,12 +8,7 @@ const octetDotStrings: string[] = Array.from({length: 256}, (_, i) => `${i}.`);
 const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
 const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
 
-type IPv4Address = string;
-type IPv6Address = string;
-type IPv4CIDR = string;
-type IPv6CIDR = string;
-type CIDR = string;
-type Network = IPv4Address | IPv4CIDR | IPv6Address | IPv6CIDR;
+type Network = string;
 type Networks = Network | Array<Network>;
 type ValidIpVersion = 4 | 6;
 
@@ -274,7 +269,6 @@ function parseCidrLean(str: Network): LeanParsedCidr {
   };
 }
 
-
 // Count bit length of a bigint using Math.clz32, avoiding toString(2) string allocation.
 function bigintBitLength(n: bigint): number {
   if (n === 0n) return 0;
@@ -427,11 +421,11 @@ function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
   }
 }
 
-function formatPart4(part: Part4): CIDR {
+function formatPart4(part: Part4): string {
   return formatIPv4Fast(part.start) + prefixStrings[Math.clz32(part.end - part.start)];
 }
 
-function formatPart6(part: Part6): CIDR {
+function formatPart6(part: Part6): string {
   return stringifyIp({number: part.start, version: 6}) + prefixStrings[128 - bigintBitLength(part.end - part.start)];
 }
 

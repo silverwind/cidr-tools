@@ -51,7 +51,7 @@ update: node_modules
 publish: node_modules
 	pnpm publish --no-git-checks
 
-.PHONY: path
+.PHONY: patch
 patch: node_modules lint test
 	pnpm exec versions patch package.json
 	git push -u --tags origin master
