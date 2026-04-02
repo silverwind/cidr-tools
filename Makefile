@@ -30,6 +30,10 @@ test: node_modules
 test-update: node_modules
 	pnpm exec vitest -u
 
+.PHONY: test-coverage
+test-coverage: node_modules
+	pnpm exec vitest --coverage
+
 .PHONY: build
 build: node_modules $(DIST_FILES)
 

@@ -74,6 +74,8 @@ test("excludeCidr", () => {
   expect(excludeCidr(["10.0.0.0/24"], ["10.0.0.0/32", "10.0.0.255/32"])).toEqual(["10.0.0.1/32", "10.0.0.2/31", "10.0.0.4/30", "10.0.0.8/29", "10.0.0.16/28", "10.0.0.32/27", "10.0.0.64/26", "10.0.0.128/26", "10.0.0.192/27", "10.0.0.224/28", "10.0.0.240/29", "10.0.0.248/30", "10.0.0.252/31", "10.0.0.254/32"]);
   expect(excludeCidr(["10.0.0.0/29"], ["10.0.0.4"])).toEqual(["10.0.0.0/30", "10.0.0.5/32", "10.0.0.6/31"]);
   expect(excludeCidr(["10.0.0.0/24", "::1/128"], ["::/0"])).toEqual(["10.0.0.0/24"]);
+  expect(excludeCidr(["0.0.0.0/28"], ["0.0.0.0/30", "0.0.0.15/32"])).toEqual(["0.0.0.4/30", "0.0.0.8/30", "0.0.0.12/31", "0.0.0.14/32"]);
+  expect(excludeCidr(["::/124"], ["::0/126", "::f/128"])).toEqual(["::4/126", "::8/126", "::c/127", "::e/128"]);
 });
 
 test("expandCidr", () => {
@@ -118,6 +120,10 @@ test("overlapCidr", () => {
   expect(overlapCidr("::/0", "::1")).toEqual(true);
   expect(overlapCidr(["10.0.0.0/24", "192.168.0.0/24"], ["172.16.0.0/12"])).toEqual(false);
   expect(overlapCidr(["10.0.0.0/24", "192.168.0.0/24"], ["192.168.0.128/25"])).toEqual(true);
+  expect(overlapCidr(["1.0.0.0/24", "2.0.0.0/24"], ["1.0.0.128/25", "3.0.0.0/24"])).toEqual(true);
+  expect(overlapCidr(["1.0.0.0/24", "2.0.0.0/24"], ["3.0.0.0/24", "4.0.0.0/24"])).toEqual(false);
+  expect(overlapCidr(["::1:0:0/96", "::2:0:0/96"], ["::1:0:0/112", "::3:0:0/96"])).toEqual(true);
+  expect(overlapCidr(["::1:0:0/96", "::2:0:0/96"], ["::3:0:0/96", "::4:0:0/96"])).toEqual(false);
 });
 
 test("normalizeCidr", () => {
@@ -230,6 +236,12 @@ test("containsCidr", () => {
   expect(containsCidr(privates, ["128.0.0.0", "::1"])).toEqual(false);
   expect(containsCidr(privates, ["127.0.0.1", "fc00::"])).toEqual(true);
   expect(containsCidr(privates, ["127.0.0.1", "192.168.255.255", "fe80::2"])).toEqual(true);
+  expect(containsCidr(["10.0.0.0/8", "192.168.0.0/16"], ["10.0.0.1", "192.168.1.1"])).toEqual(true);
+  expect(containsCidr(["10.0.0.0/8", "192.168.0.0/16"], ["10.0.0.1", "172.16.0.1"])).toEqual(false);
+  expect(containsCidr(["fd00::/64", "fd01::/64"], ["fd00::1", "fd01::1"])).toEqual(true);
+  expect(containsCidr(["fd00::/64", "fd01::/64"], ["fd00::1", "fd02::1"])).toEqual(false);
+  expect(containsCidr(["::/0"], ["1.2.3.4", "5.6.7.8"])).toEqual(false);
+  expect(containsCidr(["0.0.0.0/0"], ["::1", "::2"])).toEqual(false);
 });
 
 test("parseCidr", () => {
@@ -347,4 +359,6 @@ test("parseCidr", () => {
   expect(() => parseCidr("1.2.3.4/abc")).toThrow();
   expect(() => parseCidr("1.2.3.4/-1")).toThrow();
   expect(() => parseCidr("/24")).toThrow();
+  expect(() => parseCidr("1.2.3.4/")).toThrow();
+  expect(() => parseCidr("::/")).toThrow();
 });

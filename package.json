@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/node": "25.5.0",
     "@typescript/native-preview": "7.0.0-dev.20260324.1",
+    "@vitest/coverage-v8": "4.1.2",
     "eslint": "10.1.0",
     "eslint-config-silverwind": "127.1.4",
     "jest-extended": "7.0.0",
@@ -34,6 +35,6 @@
     "updates-config-silverwind": "2.0.1",
     "versions": "14.2.4",
     "vitest": "4.1.1",
-    "vitest-config-silverwind": "11.0.0"
+    "vitest-config-silverwind": "11.1.3"
   }
 }
