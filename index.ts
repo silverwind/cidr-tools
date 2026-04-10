@@ -6,7 +6,6 @@ const bits = {4: 32, 6: 128};
 const octetStrings: string[] = Array.from({length: 256}, (_, i) => String(i));
 const octetDotStrings: string[] = Array.from({length: 256}, (_, i) => `${i}.`);
 const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
-const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
 
 type Network = string;
 type Networks = Network | Array<Network>;
@@ -171,7 +170,7 @@ export function parseCidr(str: Network): ParsedCidr {
   if (v4num !== -1) {
     const prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : 32;
     const ip = formatIPv4Fast(v4num);
-    const prefix = prefixNumStrings[prefixNum];
+    const prefix = String(prefixNum);
     const hostBits = 32 - prefixNum;
     let startNum: number, endNum: number;
     if (hostBits >= 32) {
@@ -206,7 +205,7 @@ export function parseCidr(str: Network): ParsedCidr {
     prefixNum = bits[version as ValidIpVersion];
   }
 
-  const prefix = prefixNumStrings[prefixNum];
+  const prefix = String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
   const numBits = bits[version as ValidIpVersion];
   const hostBits = numBits - prefixNum;
@@ -320,10 +319,7 @@ function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
 
   let start: number;
   let end: number;
-  if (size === biggest && pStart % biggest === 0) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  } else if (pStart % biggest === 0) {
+  if (pStart % biggest === 0) {
     start = pStart;
     end = start + biggest - 1;
   } else {
@@ -385,10 +381,7 @@ function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
 
   let start: bigint;
   let end: bigint;
-  if (size === biggest && (pStart & (biggest - 1n)) === 0n) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  } else if ((pStart & (biggest - 1n)) === 0n) {
+  if ((pStart & (biggest - 1n)) === 0n) {
     start = pStart;
     end = start + biggest - 1n;
   } else {
