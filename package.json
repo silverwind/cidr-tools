@@ -15,7 +15,8 @@
   ],
   "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "bun": "*"
   },
   "dependencies": {
     "ip-bigint": "^8.3.4"
