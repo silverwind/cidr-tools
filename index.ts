@@ -202,18 +202,18 @@ export function parseCidr(str: Network): ParsedCidr {
   }
 
   if (prefixNum === -1) {
-    prefixNum = bits[version as ValidIpVersion];
+    prefixNum = bits[version];
   }
 
   const prefix = String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
-  const numBits = bits[version as ValidIpVersion];
+  const numBits = bits[version];
   const hostBits = numBits - prefixNum;
   const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
   return {
     cidr: ip + prefixStrings[prefixNum],
     ip,
-    version: version as ValidIpVersion,
+    version,
     prefix,
     prefixPresent,
     start: number & ~mask,
@@ -242,10 +242,10 @@ function parseCidrLean(str: Network): LeanParsedCidr {
   }
 
   if (prefixNum === -1) {
-    prefixNum = bits[version as ValidIpVersion];
+    prefixNum = bits[version];
   }
 
-  const numBits = bits[version as ValidIpVersion];
+  const numBits = bits[version];
   const hostBits = numBits - prefixNum;
 
   // Rare fallback: non-standard IPv4 parsed by ip-bigint
