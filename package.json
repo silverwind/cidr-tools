@@ -3,6 +3,14 @@
   "version": "11.3.4",
   "author": "silverwind <me@silverwind.io>",
   "description": "Tools to work with IPv4 and IPv6 CIDR",
+  "keywords": [
+    "cidr",
+    "ip",
+    "ipv4",
+    "ipv6",
+    "subnet",
+    "network"
+  ],
   "repository": "silverwind/cidr-tools",
   "license": "BSD-2-Clause",
   "type": "module",
