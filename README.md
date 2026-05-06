@@ -26,7 +26,7 @@ normalizeCidr("::ffff/64");
 //=> "::/64"
 
 parseCidr("::/64");
-// => {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
+//=> {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
 ```
 
 ## API
