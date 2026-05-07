@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        js: [[node, 22], [node, 24], [bun, latest]]
+        js: [[node, 22], [node, 24], [node, 26], [bun, latest]]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
