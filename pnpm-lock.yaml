@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       ip-bigint:
-        specifier: ^8.3.6
-        version: 8.3.6
+        specifier: ^9.0.0
+        version: 9.0.0
     devDependencies:
       '@types/node':
         specifier: 25.6.0
@@ -34,8 +34,8 @@ importers:
         specifier: 0.21.10
         version: 0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3)
       tsdown-config-silverwind:
-        specifier: 2.1.1
-        version: 2.1.1(tsdown@0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3))
+        specifier: 3.0.0
+        version: 3.0.0(tsdown@0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3))
       typescript:
         specifier: 6.0.3
         version: 6.0.3
@@ -46,8 +46,8 @@ importers:
         specifier: 17.16.9
         version: 17.16.9
       updates-config-silverwind:
-        specifier: 2.1.1
-        version: 2.1.1(prettier@3.8.3)
+        specifier: 3.0.0
+        version: 3.0.0(prettier@3.8.3)
       versions:
         specifier: 15.0.3
         version: 15.0.3
@@ -831,9 +831,9 @@ packages:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
 
-  ip-bigint@8.3.6:
-    resolution: {integrity: sha512-IRan4ty1RP2aI0MDQtfEs6gGtjDLb/4808xm21BK+ytLquz8FLiWQlepONVcQycjku3HPPEPPUcg9Om8hdOzJQ==}
-    engines: {node: '>=18'}
+  ip-bigint@9.0.0:
+    resolution: {integrity: sha512-rnynsdrAKd8IWMSea89qsx/eHCF+9lVZPHrJYzss78HLI0DbtFZKDwsSUdozOvWmIyvWPqSgThvKC6JBzJg9qw==}
+    engines: {node: '>=22'}
 
   is-bun-module@2.0.0:
     resolution: {integrity: sha512-gNCGbnnnnFAUGKeZ9PdbyeGYJqewpmc2aKHUEMO5nQPWU9lOmv7jcmQIv+qHD8fXW6W7qfuCwX4rY9LNRjXrkQ==}
@@ -1153,9 +1153,9 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
-  tsdown-config-silverwind@2.1.1:
-    resolution: {integrity: sha512-F7pIjxQgwO2FCAOvEBIEdxviCMJo11SYcfinn+FtZsGCG9seUQoYEbgmZfEyJVIhPokmvmcQVCWBxTWiXmVWuw==}
-    engines: {node: '>=20'}
+  tsdown-config-silverwind@3.0.0:
+    resolution: {integrity: sha512-Ok/jdwO4KQcYmhoNEmxRHlpNZ2V+oHdDlFiOp3PwoDpzszGlhtqHC/GxeznorDkxweA9VnNLGbNA9BJX/1QmxQ==}
+    engines: {node: '>=22'}
     peerDependencies:
       tsdown: '*'
 
@@ -1221,9 +1221,9 @@ packages:
       synckit:
         optional: true
 
-  updates-config-silverwind@2.1.1:
-    resolution: {integrity: sha512-5NfUMej82lzbb9sFCQ5f/CnDliAFjN/Mgjm5kg+c3I3PuREABPeG1Sc0TV4xFwq5TWbzXQZuISBHQiI/McmYDw==}
-    engines: {node: '>=20'}
+  updates-config-silverwind@3.0.0:
+    resolution: {integrity: sha512-mCNRYKiJAemcCoLVh8wEfXbWb8lZDI1pcMzhx75A13CCLQ8snwJrUcD9ZrvBoc9IGurkuNZ7iCyNaJTDG8Hdvg==}
+    engines: {node: '>=22'}
     peerDependencies:
       prettier: '*'
 
@@ -2031,7 +2031,7 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  ip-bigint@8.3.6: {}
+  ip-bigint@9.0.0: {}
 
   is-bun-module@2.0.0:
     dependencies:
@@ -2300,7 +2300,7 @@ snapshots:
     dependencies:
       typescript: 6.0.3
 
-  tsdown-config-silverwind@2.1.1(tsdown@0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3)):
+  tsdown-config-silverwind@3.0.0(tsdown@0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3)):
     dependencies:
       tsdown: 0.21.10(@typescript/native-preview@7.0.0-dev.20260505.1)(typescript@6.0.3)
 
@@ -2377,7 +2377,7 @@ snapshots:
     dependencies:
       rolldown: 1.0.0-rc.17
 
-  updates-config-silverwind@2.1.1(prettier@3.8.3):
+  updates-config-silverwind@3.0.0(prettier@3.8.3):
     dependencies:
       prettier: 3.8.3
 
