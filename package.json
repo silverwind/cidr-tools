@@ -27,7 +27,7 @@
     "bun": "*"
   },
   "dependencies": {
-    "ip-bigint": "^9.0.0"
+    "ip-bigint": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "25.7.0",
