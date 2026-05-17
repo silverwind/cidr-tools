@@ -6,6 +6,7 @@ const bits = {4: 32, 6: 128};
 const octetStrings: string[] = Array.from({length: 256}, (_, i) => String(i));
 const octetDotStrings: string[] = Array.from({length: 256}, (_, i) => `${i}.`);
 const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
+const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
 
 type Network = string;
 type Networks = Network | Array<Network>;
@@ -170,7 +171,7 @@ export function parseCidr(str: Network): ParsedCidr {
   if (v4num !== -1) {
     const prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : 32;
     const ip = formatIPv4Fast(v4num);
-    const prefix = String(prefixNum);
+    const prefix = prefixNumStrings[prefixNum] ?? String(prefixNum);
     const hostBits = 32 - prefixNum;
     let startNum: number, endNum: number;
     if (hostBits >= 32) {
@@ -205,7 +206,7 @@ export function parseCidr(str: Network): ParsedCidr {
     prefixNum = bits[version];
   }
 
-  const prefix = String(prefixNum);
+  const prefix = prefixNumStrings[prefixNum] ?? String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
   const numBits = bits[version];
   const hostBits = numBits - prefixNum;
@@ -282,14 +283,12 @@ function biggestPowerOfTwo(num: bigint): bigint {
   return 1n << BigInt(bigintBitLength(num) - 1);
 }
 
-// IPv4 number-based biggest power of two
 function biggestPowerOfTwo4(num: number): number {
   if (num === 0) return 0;
   if (num >= 0x100000000) return 0x100000000;
   return (1 << (31 - Math.clz32(num))) >>> 0;
 }
 
-// IPv4 number-based subparts
 function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
   if (pEnd < pStart) return;
 
@@ -318,27 +317,19 @@ function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
   let biggest = biggestPowerOfTwo4(size);
 
   let start: number;
-  let end: number;
   if (pStart % biggest === 0) {
     start = pStart;
-    end = start + biggest - 1;
   } else {
     start = Math.floor(pEnd / biggest) * biggest;
-
     if ((start + biggest - 1) > pEnd) {
-      start = (Math.floor(pEnd / biggest) - 1) * biggest;
-
+      start -= biggest;
       while (start < pStart) {
         biggest /= 2;
         start = (Math.floor(pEnd / biggest) - 1) * biggest;
       }
-
-      end = start + biggest - 1;
-    } else {
-      start = Math.floor(pEnd / biggest) * biggest;
-      end = start + biggest - 1;
     }
   }
+  const end = start + biggest - 1;
 
   if (start !== pStart) {
     subparts4(pStart, start - 1, output);
@@ -351,7 +342,6 @@ function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
   }
 }
 
-// IPv6 bigint-based subparts with bitwise optimizations
 function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
   if (pEnd < pStart) return;
 
@@ -380,28 +370,20 @@ function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
   let biggest = biggestPowerOfTwo(size);
 
   let start: bigint;
-  let end: bigint;
   if ((pStart & (biggest - 1n)) === 0n) {
     start = pStart;
-    end = start + biggest - 1n;
   } else {
     // Round down pEnd to nearest multiple of biggest
     start = pEnd & -biggest;
-
     if ((start + biggest - 1n) > pEnd) {
-      start = (pEnd & -biggest) - biggest;
-
+      start -= biggest;
       while (start < pStart) {
         biggest >>= 1n;
         start = (pEnd & -biggest) - biggest;
       }
-
-      end = start + biggest - 1n;
-    } else {
-      start = pEnd & -biggest;
-      end = start + biggest - 1n;
     }
   }
+  const end = start + biggest - 1n;
 
   if (start !== pStart) {
     subparts6(pStart, start - 1n, output);
@@ -422,7 +404,6 @@ function formatPart6(part: Part6): string {
   return stringifyIp({number: part.start, version: 6}) + prefixStrings[128 - bigintBitLength(part.end - part.start)];
 }
 
-// IPv4 number-based merge intervals
 function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
   if (nets.length === 0) return [];
   nets.sort(cmpV4StartEnd);
@@ -443,7 +424,6 @@ function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
   return merged;
 }
 
-// IPv6 bigint-based merge intervals
 function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Part6[] {
   if (nets.length === 0) return [];
   nets.sort(cmpV6StartEnd);
@@ -480,7 +460,6 @@ function mergeIntervals6(nets: LeanParsedCidr6[]): Part6[] {
   return merged;
 }
 
-// IPv4 number-based subtract
 function subtractSorted4(bases: Part4[], excls: Part4[]): Part4[] {
   if (excls.length === 0) return bases;
   if (bases.length === 0) return [];
@@ -513,7 +492,6 @@ function subtractSorted4(bases: Part4[], excls: Part4[]): Part4[] {
   return result;
 }
 
-// IPv6 bigint-based subtract
 function subtractSorted6(bases: Part6[], excls: Part6[]): Part6[] {
   if (excls.length === 0) return bases;
   if (bases.length === 0) return [];
@@ -662,8 +640,10 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
       if (parseIPv4Range(b)) {
         return startA <= rangeV4End && rangeV4Start <= endA;
       }
+      const pb = parseCidrLean(b);
+      if (pb.version !== 4) return false;
+      return startA <= pb.end && pb.start <= endA;
     }
-    // Fallback for IPv6 and non-standard IPv4
     const pa = parseCidrLean(a);
     const pb = parseCidrLean(b);
     if (pa.version !== pb.version) return false;
@@ -745,8 +725,10 @@ export function containsCidr(a: Networks, b: Networks): boolean {
       if (parseIPv4Range(b)) {
         return startA <= rangeV4Start && endA >= rangeV4End;
       }
+      const pb = parseCidrLean(b);
+      if (pb.version !== 4) return false;
+      return startA <= pb.start && endA >= pb.end;
     }
-    // Fallback for IPv6 and non-standard IPv4
     const pa = parseCidrLean(a);
     const pb = parseCidrLean(b);
     if (pa.version !== pb.version) return false;
