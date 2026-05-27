@@ -41,8 +41,11 @@ $(DIST_FILES): $(SOURCE_FILES) pnpm-lock.yaml package.json tsdown.config.ts
 	pnpm exec tsdown
 
 .PHONY: update
-update: node_modules update-actions
-	pnpm exec updates -cu
+update: update-js update-actions
+
+.PHONY: update-js
+update-js: node_modules
+	pnpm exec updates -u -f package.json
 	rm -rf node_modules pnpm-lock.yaml
 	pnpm install
 	@touch node_modules
