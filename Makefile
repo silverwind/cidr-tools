@@ -54,17 +54,9 @@ update-js: node_modules
 publish: node_modules
 	pnpm publish --no-git-checks
 
-.PHONY: patch
-patch: node_modules lint test
-	pnpm exec versions -R patch package.json
-
-.PHONY: minor
-minor: node_modules lint test
-	pnpm exec versions -R minor package.json
-
-.PHONY: major
-major: node_modules lint test
-	pnpm exec versions -R major package.json
+.PHONY: patch minor major
+patch minor major: node_modules lint test
+	pnpm exec versions -R $@ package.json
 
 .PHONY: update-actions
 update-actions: node_modules
