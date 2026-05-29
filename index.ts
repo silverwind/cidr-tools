@@ -269,109 +269,32 @@ function biggestPowerOfTwo4(num: number): number {
 }
 
 function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
-  if (pEnd < pStart) return;
-
-  if (pEnd === pStart) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  }
-
-  if ((pEnd - pStart) === 1) {
-    if (pEnd % 2 === 0) {
-      output.push({start: pStart, end: pStart}, {start: pEnd, end: pEnd});
-    } else {
-      output.push({start: pStart, end: pEnd});
-    }
-    return;
-  }
-
-  const size = pEnd - pStart + 1;
-
-  // Fast path: if size is a power of 2 and start is aligned
-  if ((size & (size - 1)) === 0 && pStart % size === 0) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  }
-
-  let biggest = biggestPowerOfTwo4(size);
-
-  let start: number;
-  if (pStart % biggest === 0) {
-    start = pStart;
-  } else {
-    start = Math.floor(pEnd / biggest) * biggest;
-    if ((start + biggest - 1) > pEnd) {
-      start -= biggest;
-      while (start < pStart) {
-        biggest /= 2;
-        start = (Math.floor(pEnd / biggest) - 1) * biggest;
-      }
-    }
-  }
-  const end = start + biggest - 1;
-
-  if (start !== pStart) {
-    subparts4(pStart, start - 1, output);
-  }
-
-  output.push({start, end});
-
-  if (end !== pEnd) {
-    subparts4(end + 1, pEnd, output);
+  // Greedily emit the largest CIDR-aligned block at each position, bounded by
+  // start's alignment (its lowest set bit) and the remaining size.
+  let start = pStart;
+  while (start <= pEnd) {
+    const size = pEnd - start + 1;
+    const lowBit = (start & -start) >>> 0; // 0 when start === 0, i.e. no alignment limit
+    const blockSize = (lowBit !== 0 && lowBit <= size) ? lowBit : biggestPowerOfTwo4(size);
+    output.push({start, end: start + blockSize - 1});
+    start += blockSize;
   }
 }
 
 function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
-  if (pEnd < pStart) return;
-
-  if (pEnd === pStart) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  }
-
-  if ((pEnd - pStart) === 1n) {
-    if (pEnd % 2n === 0n) {
-      output.push({start: pStart, end: pStart}, {start: pEnd, end: pEnd});
-    } else {
-      output.push({start: pStart, end: pEnd});
+  // Greedily emit the largest CIDR-aligned block at each position. The block is
+  // bounded by start's alignment (its lowest set bit) and the remaining size.
+  let start = pStart;
+  while (start <= pEnd) {
+    const size = pEnd - start + 1n;
+    const lowBit = start & -start; // 0n when start === 0n, i.e. no alignment limit
+    if ((size & (size - 1n)) === 0n && (lowBit === 0n || lowBit >= size)) {
+      output.push({start, end: pEnd}); // whole remaining range is one aligned CIDR block
+      return;
     }
-    return;
-  }
-
-  const size = pEnd - pStart + 1n;
-
-  // Fast path: if size is a power of 2 and start is aligned
-  if ((size & (size - 1n)) === 0n && (pStart & (size - 1n)) === 0n) {
-    output.push({start: pStart, end: pEnd});
-    return;
-  }
-
-  let biggest = biggestPowerOfTwo(size);
-
-  let start: bigint;
-  if ((pStart & (biggest - 1n)) === 0n) {
-    start = pStart;
-  } else {
-    // Round down pEnd to nearest multiple of biggest
-    start = pEnd & -biggest;
-    if ((start + biggest - 1n) > pEnd) {
-      start -= biggest;
-      while (start < pStart) {
-        biggest >>= 1n;
-        start = (pEnd & -biggest) - biggest;
-      }
-    }
-  }
-  const end = start + biggest - 1n;
-
-  if (start !== pStart) {
-    subparts6(pStart, start - 1n, output);
-  }
-
-  output.push({start, end});
-
-  if (end !== pEnd) {
-    subparts6(end + 1n, pEnd, output);
+    const blockSize = (lowBit !== 0n && lowBit <= size) ? lowBit : biggestPowerOfTwo(size);
+    output.push({start, end: start + blockSize - 1n});
+    start += blockSize;
   }
 }
 
