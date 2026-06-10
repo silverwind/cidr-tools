@@ -6,6 +6,10 @@ const octetStrings: string[] = Array.from({length: 256}, (_, i) => String(i));
 const octetDotStrings: string[] = Array.from({length: 256}, (_, i) => `${i}.`);
 const prefixStrings: string[] = Array.from({length: 129}, (_, i) => `/${i}`);
 const prefixNumStrings: string[] = Array.from({length: 129}, (_, i) => String(i));
+const hexStrings: string[] = Array.from({length: 256}, (_, i) => i.toString(16));
+const hexPadStrings: string[] = Array.from({length: 256}, (_, i) => i.toString(16).padStart(2, "0"));
+const hostMasks: bigint[] = Array.from({length: 129}, (_, i) => (1n << BigInt(i)) - 1n);
+const hostNotMasks: bigint[] = hostMasks.map(mask => ~mask);
 
 type Network = string;
 type Networks = Network | Array<Network>;
@@ -127,18 +131,36 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
     return rangeSlashIndex !== -1 ? ip + prefixStrings[rangeV4Prefix] : ip;
   }
 
-  const {start, end, prefix, version, prefixPresent} = parseCidr(cidr);
-  if (version === 4) {
-    const ip = formatIPv4Fast(Number(start));
-    return (start !== end || prefixPresent) ? ip + prefixStrings[Number(prefix)] : ip;
+  // Non-standard IPv4 (octal, single-int, etc.) and IPv6: delegate to ip-bigint.
+  const slashIndex = rangeSlashIndex; // reuse from the parseIPv4Range call above
+  const prefixPresent = slashIndex !== -1;
+  let prefixNum = prefixPresent ? parsePrefixNum(cidr, slashIndex) : -1;
+  const {number, version} = parseIp(prefixPresent ? cidr.substring(0, slashIndex) : cidr);
+  if (prefixNum === -1) {
+    prefixNum = bits[version];
   }
+
+  if (version === 4) {
+    const hostBits = 32 - prefixNum;
+    let startNum = Number(number);
+    if (hostBits >= 32) {
+      startNum = 0;
+    } else if (hostBits > 0) {
+      startNum = (startNum & ~(((1 << hostBits) >>> 0) - 1)) >>> 0;
+    }
+    const ip = formatIPv4Fast(startNum);
+    return (hostBits > 0 || prefixPresent) ? ip + prefixStrings[prefixNum] : ip;
+  }
+
   const {compress = true, hexify = false} = opts || {};
-  if (start !== end || prefixPresent) {
-    const ip = normalizeIp(stringifyIp({number: start, version}), {compress, hexify});
-    return ip + prefixStrings[Number(prefix)];
-  } else {
+  const hostBits = 128 - prefixNum;
+  if (hostBits <= 0 && !prefixPresent) {
     return normalizeIp(cidr, {compress, hexify});
   }
+  const start = hostBits > 0 ? number & hostNotMasks[hostBits] : number;
+  // stringifyIp already emits the canonical compressed form, so normalizeIp is only needed to expand.
+  const ip = stringifyIp({number: start, version});
+  return (compress ? ip : normalizeIp(ip, {compress, hexify})) + prefixStrings[prefixNum];
 }
 
 /** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
@@ -187,23 +209,28 @@ export function parseCidr(str: Network): ParsedCidr {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
+  const numBits = bits[version];
   if (prefixNum === -1) {
-    prefixNum = bits[version];
+    prefixNum = numBits;
   }
 
   const prefix = prefixNumStrings[prefixNum] ?? String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
-  const numBits = bits[version];
   const hostBits = numBits - prefixNum;
-  const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
+  let start = number;
+  let end = number;
+  if (hostBits > 0) {
+    start = number & hostNotMasks[hostBits];
+    end = number | hostMasks[hostBits];
+  }
   return {
     cidr: ip + prefixStrings[prefixNum],
     ip,
     version,
     prefix,
     prefixPresent,
-    start: number & ~mask,
-    end: number | mask,
+    start,
+    end,
   };
 }
 
@@ -222,11 +249,11 @@ function parseCidrLean(str: Network): LeanParsedCidr {
     throw new Error(`Network is not a CIDR or IP: "${str}"`);
   }
 
+  const numBits = bits[version];
   if (prefixNum === -1) {
-    prefixNum = bits[version];
+    prefixNum = numBits;
   }
 
-  const numBits = bits[version];
   const hostBits = numBits - prefixNum;
 
   if (version === 4) {
@@ -240,10 +267,12 @@ function parseCidrLean(str: Network): LeanParsedCidr {
     };
   }
 
-  const mask = hostBits > 0 ? (1n << BigInt(hostBits)) - 1n : 0n;
+  if (hostBits <= 0) {
+    return {start: number, end: number, version: 6};
+  }
   return {
-    start: number & ~mask,
-    end: number | mask,
+    start: number & hostNotMasks[hostBits],
+    end: number | hostMasks[hostBits],
     version: 6,
   };
 }
@@ -268,42 +297,35 @@ function biggestPowerOfTwo4(num: number): number {
   return (1 << (31 - Math.clz32(num))) >>> 0;
 }
 
-function subparts4(pStart: number, pEnd: number, output: Part4[]): void {
-  // Greedily emit the largest CIDR-aligned block at each position, bounded by
-  // start's alignment (its lowest set bit) and the remaining size.
+// Greedily emit the largest CIDR-aligned block at each position, bounded by
+// start's alignment (its lowest set bit) and the remaining size.
+function subparts4(pStart: number, pEnd: number, output: string[]): void {
   let start = pStart;
   while (start <= pEnd) {
     const size = pEnd - start + 1;
     const lowBit = (start & -start) >>> 0; // 0 when start === 0, i.e. no alignment limit
     const blockSize = (lowBit !== 0 && lowBit <= size) ? lowBit : biggestPowerOfTwo4(size);
-    output.push({start, end: start + blockSize - 1});
+    output.push(formatIPv4Fast(start) + prefixStrings[Math.clz32(blockSize - 1)]);
     start += blockSize;
   }
 }
 
-function subparts6(pStart: bigint, pEnd: bigint, output: Part6[]): void {
-  // Greedily emit the largest CIDR-aligned block at each position. The block is
-  // bounded by start's alignment (its lowest set bit) and the remaining size.
+// Greedily emit the largest CIDR-aligned block at each position. The block is
+// bounded by start's alignment (its lowest set bit) and the remaining size.
+function subparts6(pStart: bigint, pEnd: bigint, output: string[]): void {
   let start = pStart;
   while (start <= pEnd) {
     const size = pEnd - start + 1n;
     const lowBit = start & -start; // 0n when start === 0n, i.e. no alignment limit
     if ((size & (size - 1n)) === 0n && (lowBit === 0n || lowBit >= size)) {
-      output.push({start, end: pEnd}); // whole remaining range is one aligned CIDR block
+      // whole remaining range is one aligned CIDR block
+      output.push(stringifyIp({number: start, version: 6}) + prefixStrings[129 - bigintBitLength(size)]);
       return;
     }
     const blockSize = (lowBit !== 0n && lowBit <= size) ? lowBit : biggestPowerOfTwo(size);
-    output.push({start, end: start + blockSize - 1n});
+    output.push(stringifyIp({number: start, version: 6}) + prefixStrings[129 - bigintBitLength(blockSize)]);
     start += blockSize;
   }
-}
-
-function formatPart4(part: Part4): string {
-  return formatIPv4Fast(part.start) + prefixStrings[Math.clz32(part.end - part.start)];
-}
-
-function formatPart6(part: Part6): string {
-  return stringifyIp({number: part.start, version: 6}) + prefixStrings[128 - bigintBitLength(part.end - part.start)];
 }
 
 function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
@@ -343,22 +365,6 @@ function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Part6[] {
     }
   }
   merged.push({start: curStart, end: curEnd});
-  return merged;
-}
-
-function mergeIntervals4(nets: LeanParsedCidr4[]): Part4[] {
-  const merged: Part4[] = [];
-  for (const part of mergeIntervalsRaw4(nets)) {
-    subparts4(part.start, part.end, merged);
-  }
-  return merged;
-}
-
-function mergeIntervals6(nets: LeanParsedCidr6[]): Part6[] {
-  const merged: Part6[] = [];
-  for (const part of mergeIntervalsRaw6(nets)) {
-    subparts6(part.start, part.end, merged);
-  }
   return merged;
 }
 
@@ -437,11 +443,11 @@ export function mergeCidr(nets: Networks): Array<Network> {
   }
 
   const merged: Array<Network> = [];
-  for (const part of mergeIntervals4(v4)) {
-    merged.push(formatPart4(part));
+  for (const part of mergeIntervalsRaw4(v4)) {
+    subparts4(part.start, part.end, merged);
   }
-  for (const part of mergeIntervals6(v6)) {
-    merged.push(formatPart6(part));
+  for (const part of mergeIntervalsRaw6(v6)) {
+    subparts6(part.start, part.end, merged);
   }
 
   return merged;
@@ -468,26 +474,16 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
   {
     const baseParts = mergeIntervalsRaw4(v4base);
     const exclParts = mergeIntervalsRaw4(v4excl);
-    const remaining = subtractSorted4(baseParts, exclParts);
-    const aligned: Part4[] = [];
-    for (const part of remaining) {
-      subparts4(part.start, part.end, aligned);
-    }
-    for (const p of aligned) {
-      result.push(formatPart4(p));
+    for (const part of subtractSorted4(baseParts, exclParts)) {
+      subparts4(part.start, part.end, result);
     }
   }
 
   {
     const baseParts = mergeIntervalsRaw6(v6base);
     const exclParts = mergeIntervalsRaw6(v6excl);
-    const remaining = subtractSorted6(baseParts, exclParts);
-    const aligned: Part6[] = [];
-    for (const part of remaining) {
-      subparts6(part.start, part.end, aligned);
-    }
-    for (const p of aligned) {
-      result.push(formatPart6(p));
+    for (const part of subtractSorted6(baseParts, exclParts)) {
+      subparts6(part.start, part.end, result);
     }
   }
 
@@ -522,9 +518,29 @@ export function* expandCidr(nets: Networks): Generator<Network> {
   if (v6.length > 0) {
     const ipObj = {number: 0n, version: 6 as const};
     for (const part of mergeIntervalsRaw6(v6)) {
-      for (let num = part.start; num <= part.end; num++) {
-        ipObj.number = num;
-        yield stringifyIp(ipObj);
+      // Per 65536-IP block, the upper 112 bits are constant: stringify them once
+      // and iterate the last group numerically. A nonzero last group never joins or
+      // alters a zero run, so the compressed form is always that constant prefix
+      // plus the group's hex digits.
+      let num = part.start;
+      while (num <= part.end) {
+        const blockStart = num & ~0xffffn;
+        const blockEnd = blockStart | 0xffffn;
+        let group = Number(num & 0xffffn);
+        const groupEnd = part.end < blockEnd ? Number(part.end & 0xffffn) : 0xffff;
+        if (group === 0) {
+          ipObj.number = blockStart;
+          yield stringifyIp(ipObj); // last group zero can be absorbed into "::", stringify in full
+          group = 1;
+        }
+        if (group <= groupEnd) {
+          ipObj.number = blockStart | 1n;
+          const prefix = stringifyIp(ipObj).slice(0, -1);
+          for (; group <= groupEnd; group++) {
+            yield group < 256 ? prefix + hexStrings[group] : prefix + hexStrings[group >>> 8] + hexPadStrings[group & 0xff];
+          }
+        }
+        num = blockEnd + 1n;
       }
     }
   }
