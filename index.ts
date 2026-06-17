@@ -313,15 +313,18 @@ function subparts4(pStart: number, pEnd: number, output: string[]): void {
 // Greedily emit the largest CIDR-aligned block at each position. The block is
 // bounded by start's alignment (its lowest set bit) and the remaining size.
 function subparts6(pStart: bigint, pEnd: bigint, output: string[]): void {
+  // Whole range is one aligned CIDR block (the common merge case): emit it and
+  // skip the per-iteration alignment/size bookkeeping below.
+  const fullSize = pEnd - pStart + 1n;
+  const startLowBit = pStart & -pStart; // 0n when pStart === 0n, i.e. no alignment limit
+  if ((fullSize & (fullSize - 1n)) === 0n && (startLowBit === 0n || startLowBit >= fullSize)) {
+    output.push(stringifyIp({number: pStart, version: 6}) + prefixStrings[129 - bigintBitLength(fullSize)]);
+    return;
+  }
   let start = pStart;
   while (start <= pEnd) {
     const size = pEnd - start + 1n;
     const lowBit = start & -start; // 0n when start === 0n, i.e. no alignment limit
-    if ((size & (size - 1n)) === 0n && (lowBit === 0n || lowBit >= size)) {
-      // whole remaining range is one aligned CIDR block
-      output.push(stringifyIp({number: start, version: 6}) + prefixStrings[129 - bigintBitLength(size)]);
-      return;
-    }
     const blockSize = (lowBit !== 0n && lowBit <= size) ? lowBit : biggestPowerOfTwo(size);
     output.push(stringifyIp({number: start, version: 6}) + prefixStrings[129 - bigintBitLength(blockSize)]);
     start += blockSize;
