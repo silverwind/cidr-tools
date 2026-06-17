@@ -48,6 +48,12 @@ test("mergeCidr", () => {
   expect(mergeCidr(["::/0"])).toEqual(["::/0"]);
   expect(mergeCidr(["0.0.0.0/0", "::/0"])).toEqual(["0.0.0.0/0", "::/0"]);
   expect(mergeCidr(["10.0.0.0/8", "10.0.0.0/16", "10.0.0.0/24"])).toEqual(["10.0.0.0/8"]);
+  // adjacent blocks tile into a larger aligned block
+  expect(mergeCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.128/26", "10.0.0.192/26"])).toEqual(["10.0.0.0/24"]);
+  expect(mergeCidr(["10.0.0.128/25", "10.0.0.0/25"])).toEqual(["10.0.0.0/24"]);
+  expect(mergeCidr(["10.0.0.0/24", "10.0.0.64/26", "10.0.1.0/24"])).toEqual(["10.0.0.0/23"]);
+  expect(mergeCidr(["fe80::/66", "fe80::4000:0:0:0/66", "fe80::8000:0:0:0/66", "fe80::c000:0:0:0/66"])).toEqual(["fe80::/64"]);
+  expect(mergeCidr(["10.0.0.0/25", "::1/128", "10.0.0.128/25", "::0/128"])).toEqual(["10.0.0.0/24", "::/127"]);
   const ips = Array.from({length: 256}, (_, i) => `10.0.0.${i}/32`);
   expect(mergeCidr(ips)).toEqual(["10.0.0.0/24"]);
 });
@@ -76,6 +82,9 @@ test("excludeCidr", () => {
   expect(excludeCidr(["10.0.0.0/24", "::1/128"], ["::/0"])).toEqual(["10.0.0.0/24"]);
   expect(excludeCidr(["0.0.0.0/28"], ["0.0.0.0/30", "0.0.0.15/32"])).toEqual(["0.0.0.4/30", "0.0.0.8/30", "0.0.0.12/31", "0.0.0.14/32"]);
   expect(excludeCidr(["::/124"], ["::0/126", "::f/128"])).toEqual(["::4/126", "::8/126", "::c/127", "::e/128"]);
+  expect(excludeCidr("10.0.0.0/24", "10.0.0.64/26")).toEqual(["10.0.0.0/26", "10.0.0.128/25"]);
+  expect(excludeCidr("10.0.0.0/24", ["10.0.0.0/25", "10.0.0.128/25"])).toEqual([]);
+  expect(excludeCidr(["10.0.0.0/24", "fe80::/120"], ["10.0.0.128/25", "fe80::80/121"])).toEqual(["10.0.0.0/25", "fe80::/121"]);
 });
 
 test("expandCidr", () => {
@@ -124,6 +133,8 @@ test("overlapCidr", () => {
   expect(overlapCidr(["1.0.0.0/24", "2.0.0.0/24"], ["3.0.0.0/24", "4.0.0.0/24"])).toEqual(false);
   expect(overlapCidr(["::1:0:0/96", "::2:0:0/96"], ["::1:0:0/112", "::3:0:0/96"])).toEqual(true);
   expect(overlapCidr(["::1:0:0/96", "::2:0:0/96"], ["::3:0:0/96", "::4:0:0/96"])).toEqual(false);
+  expect(overlapCidr(["10.0.0.0/24", "fe80::/64"], ["192.168.0.0/16", "fe80::5"])).toEqual(true);
+  expect(overlapCidr(["10.0.0.0/24", "fe80::/64"], ["192.168.0.0/16", "fe81::5"])).toEqual(false);
 });
 
 test("normalizeCidr", () => {
@@ -242,6 +253,18 @@ test("containsCidr", () => {
   expect(containsCidr(["fd00::/64", "fd01::/64"], ["fd00::1", "fd02::1"])).toEqual(false);
   expect(containsCidr(["::/0"], ["1.2.3.4", "5.6.7.8"])).toEqual(false);
   expect(containsCidr(["0.0.0.0/0"], ["::1", "::2"])).toEqual(false);
+  // adjacent A-blocks must be coalesced before testing containment (union coverage)
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], "10.0.0.0/24")).toEqual(true);
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], ["10.0.0.0/24", "10.0.0.0/24"])).toEqual(true);
+  expect(containsCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.128/26", "10.0.0.192/26"], "10.0.0.0/24")).toEqual(true);
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/26"], "10.0.0.0/24")).toEqual(false);
+  expect(containsCidr(["::/65", "::8000:0:0:0/65"], "::/64")).toEqual(true);
+  expect(containsCidr(["::/66", "::8000:0:0:0/65"], "::/64")).toEqual(false);
+  expect(containsCidr(["fe80::/66", "fe80::4000:0:0:0/66", "fe80::8000:0:0:0/66", "fe80::c000:0:0:0/66"], "fe80::/64")).toEqual(true);
+  expect(containsCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.192/26"], "10.0.0.0/24")).toEqual(false); // 3 of 4 quarters
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.64/26"], "10.0.0.0/24")).toEqual(false); // overlapping, not tiling
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], ["10.0.0.0/26", "10.0.0.192/26"])).toEqual(true); // multiple targets in union
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25", "::/1", "8000::/1"], ["10.0.0.0/24", "::/0"])).toEqual(true); // mixed v4+v6 tiling
 });
 
 test("parseCidr", () => {

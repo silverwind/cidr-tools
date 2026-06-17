@@ -665,75 +665,54 @@ export function containsCidr(a: Networks, b: Networks): boolean {
     if (n.version === 4) v4b.push(n); else v6b.push(n);
   }
 
+  // A target is contained iff the union of containers covers it. Fast path: a single
+  // container covers it (no sort needed). Otherwise sort once and sweep contiguous
+  // coverage, which coalesces adjacent blocks so blocks that tile a target also count.
   if (v4b.length > 0) {
     if (v4a.length === 0) return false;
-
-    if (v4b.length === 1) {
-      const ts = v4b[0].start, te = v4b[0].end;
-      let found = false;
-      for (const a of v4a) {
-        if (a.start <= ts && a.end >= te) { found = true; break; }
+    let sorted = false;
+    for (const target of v4b) {
+      const ts = target.start, te = target.end;
+      let covered = false;
+      for (const iv of v4a) {
+        if (iv.start <= ts && iv.end >= te) { covered = true; break; }
       }
-      if (!found) return false;
-    } else {
-      v4a.sort(cmpV4Start);
+      if (covered) continue;
 
-      const maxEnd = new Array<number>(v4a.length);
-      maxEnd[0] = v4a[0].end;
-      for (let i = 1; i < v4a.length; i++) {
-        maxEnd[i] = Math.max(v4a[i].end, maxEnd[i - 1]);
-      }
-
-      for (const target of v4b) {
-        let lo = 0, hi = v4a.length - 1;
-        let idx = -1;
-        while (lo <= hi) {
-          const mid = (lo + hi) >> 1;
-          if (v4a[mid].start <= target.start) {
-            idx = mid;
-            lo = mid + 1;
-          } else {
-            hi = mid - 1;
-          }
+      if (!sorted) { v4a.sort(cmpV4Start); sorted = true; }
+      let cur = ts;
+      for (const iv of v4a) {
+        if (iv.start > cur) break;
+        if (iv.end >= cur) {
+          if (iv.end >= te) { covered = true; break; }
+          cur = iv.end + 1;
         }
-        if (idx < 0 || maxEnd[idx] < target.end) return false;
       }
+      if (!covered) return false;
     }
   }
 
   if (v6b.length > 0) {
     if (v6a.length === 0) return false;
-
-    if (v6b.length === 1) {
-      const ts = v6b[0].start, te = v6b[0].end;
-      let found = false;
-      for (const a of v6a) {
-        if (a.start <= ts && a.end >= te) { found = true; break; }
+    let sorted = false;
+    for (const target of v6b) {
+      const ts = target.start, te = target.end;
+      let covered = false;
+      for (const iv of v6a) {
+        if (iv.start <= ts && iv.end >= te) { covered = true; break; }
       }
-      if (!found) return false;
-    } else {
-      v6a.sort(cmpV6Start);
+      if (covered) continue;
 
-      const maxEnd = new Array<bigint>(v6a.length);
-      maxEnd[0] = v6a[0].end;
-      for (let i = 1; i < v6a.length; i++) {
-        maxEnd[i] = v6a[i].end > maxEnd[i - 1] ? v6a[i].end : maxEnd[i - 1]; // eslint-disable-line unicorn/prefer-math-min-max -- BigInt not supported by Math.max
-      }
-
-      for (const target of v6b) {
-        let lo = 0, hi = v6a.length - 1;
-        let idx = -1;
-        while (lo <= hi) {
-          const mid = (lo + hi) >> 1;
-          if (v6a[mid].start <= target.start) {
-            idx = mid;
-            lo = mid + 1;
-          } else {
-            hi = mid - 1;
-          }
+      if (!sorted) { v6a.sort(cmpV6Start); sorted = true; }
+      let cur = ts;
+      for (const iv of v6a) {
+        if (iv.start > cur) break;
+        if (iv.end >= cur) {
+          if (iv.end >= te) { covered = true; break; }
+          cur = iv.end + 1n;
         }
-        if (idx < 0 || maxEnd[idx] < target.end) return false;
       }
+      if (!covered) return false;
     }
   }
 
