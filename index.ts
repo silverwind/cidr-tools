@@ -12,7 +12,7 @@ const hostMasks: bigint[] = Array.from({length: 129}, (_, i) => (1n << BigInt(i)
 const hostNotMasks: bigint[] = hostMasks.map(mask => ~mask);
 
 type Network = string;
-type Networks = Network | Array<Network>;
+type Networks = Network | ReadonlyArray<Network>;
 type ValidIpVersion = 4 | 6;
 
 type ParsedCidr = {
@@ -164,8 +164,8 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
 }
 
 /** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
-export function normalizeCidr<T extends Network | Array<Network>>(cidr: T, opts?: NormalizeOpts): T {
-  return (Array.isArray(cidr) ? cidr.map(entry => doNormalize(entry, opts)) : doNormalize(cidr, opts)) as T;
+export function normalizeCidr<T extends Networks>(cidr: T, opts?: NormalizeOpts): T {
+  return (typeof cidr === "string" ? doNormalize(cidr, opts) : cidr.map(entry => doNormalize(entry, opts))) as T;
 }
 
 /** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
@@ -434,7 +434,7 @@ function subtractSorted6(bases: Part6[], excls: Part6[]): Part6[] {
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
-  const arr = Array.isArray(nets) ? nets : [nets];
+  const arr = typeof nets === "string" ? [nets] : nets;
   const v4: LeanParsedCidr4[] = [];
   const v6: LeanParsedCidr6[] = [];
   for (const s of arr) {
@@ -455,8 +455,8 @@ export function mergeCidr(nets: Networks): Array<Network> {
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
 export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
-  const baseArr = Array.isArray(base) ? base : [base];
-  const exclArr = Array.isArray(excl) ? excl : [excl];
+  const baseArr = typeof base === "string" ? [base] : base;
+  const exclArr = typeof excl === "string" ? [excl] : excl;
 
   const v4base: LeanParsedCidr4[] = [], v6base: LeanParsedCidr6[] = [];
   const v4excl: LeanParsedCidr4[] = [], v6excl: LeanParsedCidr6[] = [];
@@ -492,7 +492,7 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
 
 /** Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
-  const arr: Array<Network> = Array.isArray(nets) ? nets : [nets];
+  const arr = typeof nets === "string" ? [nets] : nets;
   const v4: LeanParsedCidr4[] = [];
   const v6: LeanParsedCidr6[] = [];
   for (const s of arr) {
@@ -549,7 +549,7 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 /** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
 export function overlapCidr(a: Networks, b: Networks): boolean {
   // Fast path for single-vs-single (most common case)
-  if (!Array.isArray(a) && !Array.isArray(b)) {
+  if (typeof a === "string" && typeof b === "string") {
     // Zero-allocation IPv4 fast path
     if (parseIPv4Range(a)) {
       const startA = rangeV4Start, endA = rangeV4End;
@@ -566,8 +566,8 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
     return pa.start <= pb.end && pb.start <= pa.end;
   }
 
-  const aArr = Array.isArray(a) ? a : [a];
-  const bArr = Array.isArray(b) ? b : [b];
+  const aArr = typeof a === "string" ? [a] : a;
+  const bArr = typeof b === "string" ? [b] : b;
 
   const v4a: LeanParsedCidr4[] = [], v6a: LeanParsedCidr6[] = [];
   const v4b: LeanParsedCidr4[] = [], v6b: LeanParsedCidr6[] = [];
@@ -631,7 +631,7 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 /** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
 export function containsCidr(a: Networks, b: Networks): boolean {
   // Fast path for single-vs-single (most common case)
-  if (!Array.isArray(a) && !Array.isArray(b)) {
+  if (typeof a === "string" && typeof b === "string") {
     // Zero-allocation IPv4 fast path
     if (parseIPv4Range(a)) {
       const startA = rangeV4Start, endA = rangeV4End;
@@ -648,8 +648,8 @@ export function containsCidr(a: Networks, b: Networks): boolean {
     return pa.start <= pb.start && pa.end >= pb.end;
   }
 
-  const aArr = Array.isArray(a) ? a : [a];
-  const bArr = Array.isArray(b) ? b : [b];
+  const aArr = typeof a === "string" ? [a] : a;
+  const bArr = typeof b === "string" ? [b] : b;
 
   const v4a: LeanParsedCidr4[] = [], v6a: LeanParsedCidr6[] = [];
   const v4b: LeanParsedCidr4[] = [], v6b: LeanParsedCidr6[] = [];

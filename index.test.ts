@@ -362,3 +362,14 @@ test("parseCidr", () => {
   expect(() => parseCidr("1.2.3.4/")).toThrow();
   expect(() => parseCidr("::/")).toThrow();
 });
+
+// readonly arrays must be accepted (compile-time guard against the type reverting to a mutable Array)
+test("readonly array inputs", () => {
+  const ro: readonly string[] = ["1.0.0.0/24", "1.0.1.0/24"];
+  expect(mergeCidr(ro)).toEqual(["1.0.0.0/23"]);
+  expect(excludeCidr(ro, ro)).toEqual([]);
+  expect(Array.from(expandCidr(ro))).toHaveLength(512);
+  expect(overlapCidr(ro, ro)).toBe(true);
+  expect(containsCidr(ro, ro)).toBe(true);
+  expect(normalizeCidr(ro)).toEqual(["1.0.0.0/24", "1.0.1.0/24"]);
+});
