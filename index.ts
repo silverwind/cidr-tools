@@ -677,7 +677,8 @@ export function containsCidr(a: Networks, b: Networks): boolean {
       const ts = target.start, te = target.end;
       let covered = false;
       for (const iv of v4a) {
-        if (iv.start <= ts && iv.end >= te) { covered = true; break; }
+        if (iv.start > ts || iv.end < te) continue;
+        covered = true; break;
       }
       if (covered) continue;
 
@@ -701,7 +702,8 @@ export function containsCidr(a: Networks, b: Networks): boolean {
       const ts = target.start, te = target.end;
       let covered = false;
       for (const iv of v6a) {
-        if (iv.start <= ts && iv.end >= te) { covered = true; break; }
+        if (iv.start > ts || iv.end < te) continue;
+        covered = true; break;
       }
       if (covered) continue;
 

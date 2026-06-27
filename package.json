@@ -21,7 +21,7 @@
   "files": [
     "dist"
   ],
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=22",
     "bun": "*"
@@ -30,11 +30,11 @@
     "ip-bigint": "^9.0.6"
   },
   "devDependencies": {
-    "@types/node": "25.9.3",
-    "@typescript/native-preview": "7.0.0-dev.20260617.2",
+    "@types/node": "26.0.1",
+    "@typescript/native-preview": "7.0.0-dev.20260627.2",
     "@vitest/coverage-v8": "4.1.9",
-    "eslint": "10.5.0",
-    "eslint-config-silverwind": "137.0.0",
+    "eslint": "10.6.0",
+    "eslint-config-silverwind": "138.0.0",
     "jest-extended": "7.0.0",
     "tsdown": "0.22.3",
     "tsdown-config-silverwind": "3.0.4",
