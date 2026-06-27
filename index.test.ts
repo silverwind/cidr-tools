@@ -182,6 +182,12 @@ test("normalizeCidr", () => {
   expect(normalizeCidr(["::FFFF:34.90.242.162"], {hexify: true})).toEqual(["::ffff:225a:f2a2"]);
   expect(normalizeCidr(["::FFFF:34.90.242.162/32"], {hexify: true})).toEqual(["::/32"]);
   expect(normalizeCidr("::FFFF:192.168.1.1", {compress: false, hexify: true})).toEqual("0:0:0:0:0:ffff:c0a8:101");
+  expect(normalizeCidr("::FFFF:34.90.242.162/128")).toEqual("::ffff:34.90.242.162/128");
+  expect(normalizeCidr("::FFFF:34.90.242.162/112")).toEqual("::ffff:34.90.0.0/112");
+  expect(normalizeCidr("::FFFF:34.90.242.162/128", {hexify: true})).toEqual("::ffff:225a:f2a2/128");
+  expect(normalizeCidr("::FFFF:34.90.242.162/128", {compress: false})).toEqual("0:0:0:0:0:ffff:34.90.242.162/128");
+  expect(normalizeCidr("fe80::1%eth0/128")).toEqual("fe80::1%eth0/128");
+  expect(normalizeCidr("fe80::1%eth0/64")).toEqual("fe80::%eth0/64");
 });
 
 test("containsCidr", () => {

@@ -135,7 +135,7 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
   const slashIndex = rangeSlashIndex; // reuse from the parseIPv4Range call above
   const prefixPresent = slashIndex !== -1;
   let prefixNum = prefixPresent ? parsePrefixNum(cidr, slashIndex) : -1;
-  const {number, version} = parseIp(prefixPresent ? cidr.substring(0, slashIndex) : cidr);
+  const {number, version, ipv4mapped, scopeid} = parseIp(prefixPresent ? cidr.substring(0, slashIndex) : cidr);
   if (prefixNum === -1) {
     prefixNum = bits[version];
   }
@@ -158,8 +158,10 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
     return normalizeIp(cidr, {compress, hexify});
   }
   const start = hostBits > 0 ? number & hostNotMasks[hostBits] : number;
+  // Masking can clear the `::ffff:` marker, leaving an address that is no longer v4-mapped.
+  const startMapped = ipv4mapped && (start >> 32n) === 0xffffn;
   // stringifyIp already emits the canonical compressed form, so normalizeIp is only needed to expand.
-  const ip = stringifyIp({number: start, version});
+  const ip = stringifyIp({number: start, version, ipv4mapped: startMapped, scopeid}, {hexify});
   return (compress ? ip : normalizeIp(ip, {compress, hexify})) + prefixStrings[prefixNum];
 }
 
