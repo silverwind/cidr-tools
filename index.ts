@@ -30,27 +30,18 @@ type NormalizeOpts = {
   hexify?: boolean;
 };
 
-type Part4 = {
-  start: number,
-  end: number,
-};
-
-type Part6 = {
-  start: bigint,
-  end: bigint,
-};
-
-type LeanParsedCidr4 = {
+type Range4 = {
   start: number;
   end: number;
-  version: 4;
 };
 
-type LeanParsedCidr6 = {
+type Range6 = {
   start: bigint;
   end: bigint;
-  version: 6;
 };
+
+type LeanParsedCidr4 = Range4 & {version: 4};
+type LeanParsedCidr6 = Range6 & {version: 6};
 
 type LeanParsedCidr = LeanParsedCidr4 | LeanParsedCidr6;
 
@@ -84,6 +75,12 @@ function parseIPv4Fast(s: string, end: number): number {
   return ((num << 8) | octet) >>> 0;
 }
 
+// 32-bit host masks indexed by host bit count, so index 32 is the whole space and 0 a single
+// address. Callers derive hostBits from a non-negative prefix and clamp it to a valid index with
+// `Math.max`. Int32Array keeps the all-ones entry a plain int32 (-1), which masks identically to
+// 0xFFFFFFFF.
+const hostMasks4 = Int32Array.from({length: 33}, (_, i) => i === 32 ? -1 : (1 << i) - 1);
+
 function formatIPv4Fast(n: number): string {
   return octetDotStrings[(n >>> 24) & 0xff] + octetDotStrings[(n >>> 16) & 0xff] + octetDotStrings[(n >>> 8) & 0xff] + octetStrings[n & 0xff];
 }
@@ -113,15 +110,9 @@ function parseIPv4Range(str: string): boolean {
   const v4num = parseIPv4Fast(str, ipEnd);
   if (v4num === -1) return false;
   rangeV4Prefix = rangeSlashIndex !== -1 ? parsePrefixNum(str, rangeSlashIndex) : 32;
-  const hostBits = 32 - rangeV4Prefix;
-  if (hostBits >= 32) {
-    rangeV4Start = 0;
-    rangeV4End = 0xFFFFFFFF;
-  } else {
-    const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
-    rangeV4Start = (v4num & ~mask) >>> 0;
-    rangeV4End = (v4num | mask) >>> 0;
-  }
+  const mask = hostMasks4[Math.max(32 - rangeV4Prefix, 0)];
+  rangeV4Start = (v4num & ~mask) >>> 0;
+  rangeV4End = (v4num | mask) >>> 0;
   return true;
 }
 
@@ -142,13 +133,8 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
 
   if (version === 4) {
     const hostBits = 32 - prefixNum;
-    let startNum = Number(number);
-    if (hostBits >= 32) {
-      startNum = 0;
-    } else if (hostBits > 0) {
-      startNum = (startNum & ~(((1 << hostBits) >>> 0) - 1)) >>> 0;
-    }
-    const ip = formatIPv4Fast(startNum);
+    const mask = hostMasks4[Math.max(hostBits, 0)];
+    const ip = formatIPv4Fast((Number(number) & ~mask) >>> 0);
     return (hostBits > 0 || prefixPresent) ? ip + prefixStrings[prefixNum] : ip;
   }
 
@@ -181,24 +167,15 @@ export function parseCidr(str: Network): ParsedCidr {
     const prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : 32;
     const ip = formatIPv4Fast(v4num);
     const prefix = prefixNumStrings[prefixNum] ?? String(prefixNum);
-    const hostBits = 32 - prefixNum;
-    let startNum: number, endNum: number;
-    if (hostBits >= 32) {
-      startNum = 0;
-      endNum = 0xFFFFFFFF;
-    } else {
-      const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
-      startNum = (v4num & ~mask) >>> 0;
-      endNum = (v4num | mask) >>> 0;
-    }
+    const mask = hostMasks4[Math.max(32 - prefixNum, 0)];
     return {
       cidr: ip + prefixStrings[prefixNum],
       ip,
       version: 4,
       prefix,
       prefixPresent,
-      start: BigInt(startNum),
-      end: BigInt(endNum),
+      start: BigInt((v4num & ~mask) >>> 0),
+      end: BigInt((v4num | mask) >>> 0),
     };
   }
 
@@ -260,8 +237,7 @@ function parseCidrLean(str: Network): LeanParsedCidr {
 
   if (version === 4) {
     const num = Number(number);
-    if (hostBits >= 32) return {start: 0, end: 0xFFFFFFFF, version: 4};
-    const mask = hostBits > 0 ? ((1 << hostBits) >>> 0) - 1 : 0;
+    const mask = hostMasks4[Math.max(hostBits, 0)];
     return {
       start: (num & ~mask) >>> 0,
       end: (num | mask) >>> 0,
@@ -333,10 +309,11 @@ function subparts6(pStart: bigint, pEnd: bigint, output: string[]): void {
   }
 }
 
-function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
+// Sorts and coalesces overlapping or adjacent ranges into a new array.
+function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Range4[] {
   if (nets.length === 0) return [];
   nets.sort(cmpV4StartEnd);
-  const merged: Part4[] = [];
+  const merged: Range4[] = [];
   let curStart = nets[0].start;
   let curEnd = nets[0].end;
   for (let i = 1; i < nets.length; i++) {
@@ -353,10 +330,10 @@ function mergeIntervalsRaw4(nets: LeanParsedCidr4[]): Part4[] {
   return merged;
 }
 
-function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Part6[] {
+function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Range6[] {
   if (nets.length === 0) return [];
   nets.sort(cmpV6StartEnd);
-  const merged: Part6[] = [];
+  const merged: Range6[] = [];
   let curStart = nets[0].start;
   let curEnd = nets[0].end;
   for (let i = 1; i < nets.length; i++) {
@@ -373,11 +350,11 @@ function mergeIntervalsRaw6(nets: LeanParsedCidr6[]): Part6[] {
   return merged;
 }
 
-function subtractSorted4(bases: Part4[], excls: Part4[]): Part4[] {
+function subtractSorted4(bases: Range4[], excls: Range4[]): Range4[] {
   if (excls.length === 0) return bases;
   if (bases.length === 0) return [];
 
-  const result: Part4[] = [];
+  const result: Range4[] = [];
   let j = 0;
 
   for (const base of bases) {
@@ -405,11 +382,11 @@ function subtractSorted4(bases: Part4[], excls: Part4[]): Part4[] {
   return result;
 }
 
-function subtractSorted6(bases: Part6[], excls: Part6[]): Part6[] {
+function subtractSorted6(bases: Range6[], excls: Range6[]): Range6[] {
   if (excls.length === 0) return bases;
   if (bases.length === 0) return [];
 
-  const result: Part6[] = [];
+  const result: Range6[] = [];
   let j = 0;
 
   for (const base of bases) {
@@ -439,12 +416,10 @@ function subtractSorted6(bases: Part6[], excls: Part6[]): Part6[] {
 
 /** Returns an array of merged networks */
 export function mergeCidr(nets: Networks): Array<Network> {
-  const arr = typeof nets === "string" ? [nets] : nets;
-  const v4: LeanParsedCidr4[] = [];
-  const v6: LeanParsedCidr6[] = [];
-  for (const s of arr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4.push(n); else v6.push(n);
+  const v4: LeanParsedCidr4[] = [], v6: LeanParsedCidr6[] = [];
+  for (const str of typeof nets === "string" ? [nets] : nets) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4.push(net); else v6.push(net);
   }
 
   const merged: Array<Network> = [];
@@ -460,34 +435,25 @@ export function mergeCidr(nets: Networks): Array<Network> {
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
 export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
-  const baseArr = typeof base === "string" ? [base] : base;
-  const exclArr = typeof excl === "string" ? [excl] : excl;
-
   const v4base: LeanParsedCidr4[] = [], v6base: LeanParsedCidr6[] = [];
   const v4excl: LeanParsedCidr4[] = [], v6excl: LeanParsedCidr6[] = [];
-  for (const s of baseArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4base.push(n); else v6base.push(n);
+  for (const str of typeof base === "string" ? [base] : base) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4base.push(net); else v6base.push(net);
   }
-  for (const s of exclArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4excl.push(n); else v6excl.push(n);
+  for (const str of typeof excl === "string" ? [excl] : excl) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4excl.push(net); else v6excl.push(net);
   }
 
   const result: Array<Network> = [];
-
-  {
-    const baseParts = mergeIntervalsRaw4(v4base);
-    const exclParts = mergeIntervalsRaw4(v4excl);
-    for (const part of subtractSorted4(baseParts, exclParts)) {
+  if (v4base.length > 0) {
+    for (const part of subtractSorted4(mergeIntervalsRaw4(v4base), mergeIntervalsRaw4(v4excl))) {
       subparts4(part.start, part.end, result);
     }
   }
-
-  {
-    const baseParts = mergeIntervalsRaw6(v6base);
-    const exclParts = mergeIntervalsRaw6(v6excl);
-    for (const part of subtractSorted6(baseParts, exclParts)) {
+  if (v6base.length > 0) {
+    for (const part of subtractSorted6(mergeIntervalsRaw6(v6base), mergeIntervalsRaw6(v6excl))) {
       subparts6(part.start, part.end, result);
     }
   }
@@ -497,12 +463,10 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
 
 /** Returns a generator for individual IPs contained in the networks. */
 export function* expandCidr(nets: Networks): Generator<Network> {
-  const arr = typeof nets === "string" ? [nets] : nets;
-  const v4: LeanParsedCidr4[] = [];
-  const v6: LeanParsedCidr6[] = [];
-  for (const s of arr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4.push(n); else v6.push(n);
+  const v4: LeanParsedCidr4[] = [], v6: LeanParsedCidr6[] = [];
+  for (const str of typeof nets === "string" ? [nets] : nets) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4.push(net); else v6.push(net);
   }
 
   if (v4.length > 0) {
@@ -571,31 +535,24 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
     return pa.start <= pb.end && pb.start <= pa.end;
   }
 
-  const aArr = typeof a === "string" ? [a] : a;
-  const bArr = typeof b === "string" ? [b] : b;
-
   const v4a: LeanParsedCidr4[] = [], v6a: LeanParsedCidr6[] = [];
   const v4b: LeanParsedCidr4[] = [], v6b: LeanParsedCidr6[] = [];
-  for (const s of aArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4a.push(n); else v6a.push(n);
+  for (const str of typeof a === "string" ? [a] : a) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4a.push(net); else v6a.push(net);
   }
-  for (const s of bArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4b.push(n); else v6b.push(n);
+  for (const str of typeof b === "string" ? [b] : b) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4b.push(net); else v6b.push(net);
   }
 
   // Single-element side uses linear scan to avoid sorting both arrays.
   if (v4a.length > 0 && v4b.length > 0) {
-    if (v4b.length === 1) {
-      const bs = v4b[0].start, be = v4b[0].end;
-      for (const el of v4a) {
-        if (el.start <= be && bs <= el.end) return true;
-      }
-    } else if (v4a.length === 1) {
-      const as = v4a[0].start, ae = v4a[0].end;
-      for (const el of v4b) {
-        if (as <= el.end && el.start <= ae) return true;
+    if (v4a.length === 1 || v4b.length === 1) {
+      const bIsSingle = v4b.length === 1;
+      const one = bIsSingle ? v4b[0] : v4a[0];
+      for (const el of bIsSingle ? v4a : v4b) {
+        if (one.start <= el.end && el.start <= one.end) return true;
       }
     } else {
       v4a.sort(cmpV4Start);
@@ -609,15 +566,11 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
   }
 
   if (v6a.length > 0 && v6b.length > 0) {
-    if (v6b.length === 1) {
-      const bs = v6b[0].start, be = v6b[0].end;
-      for (const el of v6a) {
-        if (el.start <= be && bs <= el.end) return true;
-      }
-    } else if (v6a.length === 1) {
-      const as = v6a[0].start, ae = v6a[0].end;
-      for (const el of v6b) {
-        if (as <= el.end && el.start <= ae) return true;
+    if (v6a.length === 1 || v6b.length === 1) {
+      const bIsSingle = v6b.length === 1;
+      const one = bIsSingle ? v6b[0] : v6a[0];
+      for (const el of bIsSingle ? v6a : v6b) {
+        if (one.start <= el.end && el.start <= one.end) return true;
       }
     } else {
       v6a.sort(cmpV6Start);
@@ -653,18 +606,15 @@ export function containsCidr(a: Networks, b: Networks): boolean {
     return pa.start <= pb.start && pa.end >= pb.end;
   }
 
-  const aArr = typeof a === "string" ? [a] : a;
-  const bArr = typeof b === "string" ? [b] : b;
-
   const v4a: LeanParsedCidr4[] = [], v6a: LeanParsedCidr6[] = [];
   const v4b: LeanParsedCidr4[] = [], v6b: LeanParsedCidr6[] = [];
-  for (const s of aArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4a.push(n); else v6a.push(n);
+  for (const str of typeof a === "string" ? [a] : a) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4a.push(net); else v6a.push(net);
   }
-  for (const s of bArr) {
-    const n = parseCidrLean(s);
-    if (n.version === 4) v4b.push(n); else v6b.push(n);
+  for (const str of typeof b === "string" ? [b] : b) {
+    const net = parseCidrLean(str);
+    if (net.version === 4) v4b.push(net); else v6b.push(net);
   }
 
   // A target is contained iff the union of containers covers it. Fast path: a single
