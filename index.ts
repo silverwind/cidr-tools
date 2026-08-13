@@ -96,6 +96,13 @@ function parsePrefixNum(str: string, slashIndex: number): number {
   return prefixNum;
 }
 
+// A prefix outside the valid range (0-32 for IPv4, 0-128 for IPv6) indexes the
+// prefix/mask lookup tables out of bounds, which silently treats an IPv4 /33 as
+// /32 or yields garbage like "::undefined". Reject it instead.
+function checkPrefix(prefixNum: number, maxBits: number, str: string): void {
+  if (prefixNum > maxBits) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+}
+
 // Scratch output of parseIPv4Range, clobbered by its next call. Only rangeSlashIndex is valid
 // when it returns false.
 let rangeV4Start = 0;
@@ -137,6 +144,7 @@ function parseIPv4Range(str: string): boolean {
 
   const v4num = ((num << 8) | octet) >>> 0;
   rangeV4Prefix = rangeSlashIndex !== -1 ? parsePrefixNum(str, rangeSlashIndex) : 32;
+  checkPrefix(rangeV4Prefix, 32, str);
   const mask = hostMasks4[Math.max(32 - rangeV4Prefix, 0)];
   rangeV4Start = (v4num & ~mask) >>> 0;
   rangeV4End = (v4num | mask) >>> 0;
@@ -157,6 +165,7 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
   if (prefixNum === -1) {
     prefixNum = bits[version];
   }
+  checkPrefix(prefixNum, bits[version], cidr);
 
   if (version === 4) {
     const hostBits = 32 - prefixNum;
@@ -192,6 +201,7 @@ export function parseCidr(str: Network): ParsedCidr {
   const v4num = parseIPv4Fast(str, prefixPresent ? slashIndex : str.length);
   if (v4num !== -1) {
     const prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : 32;
+    checkPrefix(prefixNum, 32, str);
     const ip = formatIPv4Fast(v4num);
     const mask = hostMasks4[Math.max(32 - prefixNum, 0)];
     return {
@@ -218,6 +228,7 @@ export function parseCidr(str: Network): ParsedCidr {
   if (prefixNum === -1) {
     prefixNum = numBits;
   }
+  checkPrefix(prefixNum, numBits, str);
 
   const prefix = prefixNumStrings[prefixNum] ?? String(prefixNum);
   const ip = stringifyIp({number, version, ipv4mapped, scopeid});
@@ -255,6 +266,7 @@ function parseCidrLeanSlow(str: Network): LeanParsedCidr {
   if (prefixNum === -1) {
     prefixNum = numBits;
   }
+  checkPrefix(prefixNum, numBits, str);
 
   const hostBits = numBits - prefixNum;
 

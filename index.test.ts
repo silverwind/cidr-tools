@@ -390,6 +390,17 @@ test("parseCidr", () => {
   expect(() => parseCidr("/24")).toThrow();
   expect(() => parseCidr("1.2.3.4/")).toThrow();
   expect(() => parseCidr("::/")).toThrow();
+  // prefix out of range for the address family (0-32 for v4, 0-128 for v6)
+  expect(() => parseCidr("1.2.3.4/33")).toThrow();
+  expect(() => parseCidr("1.2.3.4/255")).toThrow();
+  expect(() => parseCidr("::/129")).toThrow();
+  expect(() => parseCidr("::/200")).toThrow();
+  // the other parse paths (normalizeCidr, containsCidr) must reject it too,
+  // rather than emitting "::undefined" or treating an IPv4 /33 as /32
+  expect(() => normalizeCidr("::/200")).toThrow();
+  expect(() => normalizeCidr("1.2.3.4/33")).toThrow();
+  expect(() => containsCidr("1.2.3.4/33", "1.2.3.4")).toThrow();
+  expect(() => containsCidr("::/129", "::1")).toThrow();
 });
 
 // readonly arrays must be accepted (compile-time guard against the type reverting to a mutable Array)
