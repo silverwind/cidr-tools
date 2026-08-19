@@ -27,7 +27,8 @@
     "bun": "*"
   },
   "dependencies": {
-    "ip-bigint": "^9.0.8"
+    "cidr-regex": "^7.1.0",
+    "ip-bigint": "^10.0.1"
   },
   "devDependencies": {
     "@types/node": "26.1.2",

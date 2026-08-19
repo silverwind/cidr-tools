@@ -1,3 +1,4 @@
+import cidrRegex from "cidr-regex";
 import {parseIp, stringifyIp} from "ip-bigint";
 
 const bits = {4: 32, 6: 128};
@@ -25,10 +26,38 @@ type ParsedCidr = {
   end: bigint;
 };
 
+type CidrOpts = {
+  /** Whether to reject networks that are not a CIDR or IP address. Default: `true` */
+  validate?: boolean;
+};
+
 type NormalizeOpts = {
+  /** Whether to reject networks that are not a CIDR or IP address. Default: `true` */
+  validate?: boolean;
   compress?: boolean;
   hexify?: boolean;
 };
+
+const networkRe = cidrRegex({exact: true, prefix: "optional"});
+// networks are validated at the boundary, so inner parses skip ip-bigint's own check
+const unchecked = {validate: false};
+
+function invalidNetwork(net: Network): Error {
+  return new Error(`Network is not a CIDR or IP: "${net}"`);
+}
+
+function checkNetwork(net: Network): void {
+  if (!networkRe.test(net)) throw invalidNetwork(net);
+}
+
+function checkNetworks(nets: Networks, opts?: CidrOpts): void {
+  if (opts?.validate === false) return;
+  if (typeof nets === "string") {
+    checkNetwork(nets);
+  } else {
+    for (const net of nets) checkNetwork(net);
+  }
+}
 
 type Range4 = {
   start: number;
@@ -86,11 +115,11 @@ function parseIPv4Fast(s: string, end: number): number {
 }
 
 function parsePrefixNum(str: string, slashIndex: number): number {
-  if (slashIndex + 1 >= str.length) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+  if (slashIndex + 1 >= str.length) throw invalidNetwork(str);
   let prefixNum = 0;
   for (let i = slashIndex + 1; i < str.length; i++) {
     const c = str.charCodeAt(i);
-    if (c < 48 || c > 57) throw new Error(`Network is not a CIDR or IP: "${str}"`);
+    if (c < 48 || c > 57) throw invalidNetwork(str);
     prefixNum = prefixNum * 10 + (c - 48);
   }
   return prefixNum;
@@ -149,11 +178,11 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
     return rangeSlashIndex !== -1 ? ip + prefixStrings[rangeV4Prefix] : ip;
   }
 
-  // Non-standard IPv4 (octal, single-int, etc.) and IPv6: delegate to ip-bigint.
+  // IPv6, and the IPv4 forms the fast path above declines: delegate to ip-bigint.
   const slashIndex = rangeSlashIndex; // reuse from the parseIPv4Range call above
   const prefixPresent = slashIndex !== -1;
   let prefixNum = prefixPresent ? parsePrefixNum(cidr, slashIndex) : -1;
-  const {number, version, ipv4mapped, scopeid} = parseIp(prefixPresent ? cidr.substring(0, slashIndex) : cidr);
+  const {number, version, ipv4mapped, scopeid} = parseIp(prefixPresent ? cidr.substring(0, slashIndex) : cidr, unchecked);
   if (prefixNum === -1) {
     prefixNum = bits[version];
   }
@@ -179,11 +208,13 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
 
 /** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
 export function normalizeCidr<T extends Networks>(cidr: T, opts?: NormalizeOpts): T {
+  checkNetworks(cidr, opts);
   return (typeof cidr === "string" ? doNormalize(cidr, opts) : cidr.map(entry => doNormalize(entry, opts))) as T;
 }
 
 /** Returns a `parsed` Object which is used internally by this module. It can be used to test whether the passed network is IPv4 or IPv6 or to work with the BigInts directly. */
-export function parseCidr(str: Network): ParsedCidr {
+export function parseCidr(str: Network, opts?: CidrOpts): ParsedCidr {
+  if (opts?.validate !== false) checkNetwork(str);
   const slashIndex = str.indexOf("/");
   const prefixPresent = slashIndex !== -1;
 
@@ -205,15 +236,11 @@ export function parseCidr(str: Network): ParsedCidr {
     };
   }
 
-  // Non-standard IPv4 (octal, single-int, etc.) and IPv6: delegate to ip-bigint.
+  // IPv6, and the IPv4 forms the fast path above declines: delegate to ip-bigint.
   const ipPart = prefixPresent ? str.substring(0, slashIndex) : str;
   let prefixNum = prefixPresent ? parsePrefixNum(str, slashIndex) : -1;
 
-  const {number, version, ipv4mapped, scopeid} = parseIp(ipPart);
-  if (!version) {
-    throw new Error(`Network is not a CIDR or IP: "${str}"`);
-  }
-
+  const {number, version, ipv4mapped, scopeid} = parseIp(ipPart, unchecked);
   const numBits = bits[version];
   if (prefixNum === -1) {
     prefixNum = numBits;
@@ -239,18 +266,14 @@ export function parseCidr(str: Network): ParsedCidr {
   };
 }
 
-// Non-standard IPv4 and IPv6. Call only after parseIPv4Range(str) returned false, whose
-// rangeSlashIndex it reuses.
+// IPv6, and the IPv4 forms the fast path declines. Call only after parseIPv4Range(str) returned
+// false, whose rangeSlashIndex it reuses.
 function parseCidrLeanSlow(str: Network): LeanParsedCidr {
   const slashIndex = rangeSlashIndex;
   const ipPart = slashIndex !== -1 ? str.substring(0, slashIndex) : str;
   let prefixNum = slashIndex !== -1 ? parsePrefixNum(str, slashIndex) : -1;
 
-  const {number, version} = parseIp(ipPart);
-  if (!version) {
-    throw new Error(`Network is not a CIDR or IP: "${str}"`);
-  }
-
+  const {number, version} = parseIp(ipPart, unchecked);
   const numBits = bits[version];
   if (prefixNum === -1) {
     prefixNum = numBits;
@@ -441,7 +464,8 @@ function subtractSorted6(bases: Range6[], excls: Range6[]): Range6[] {
 }
 
 /** Returns an array of merged networks */
-export function mergeCidr(nets: Networks): Array<Network> {
+export function mergeCidr(nets: Networks, opts?: CidrOpts): Array<Network> {
+  checkNetworks(nets, opts);
   const v4: LeanParsedCidr4[] = [], v6: LeanParsedCidr6[] = [];
   for (const str of typeof nets === "string" ? [nets] : nets) {
     const net = parseCidrLean(str);
@@ -460,7 +484,9 @@ export function mergeCidr(nets: Networks): Array<Network> {
 }
 
 /** Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`. */
-export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
+export function excludeCidr(base: Networks, excl: Networks, opts?: CidrOpts): Array<Network> {
+  checkNetworks(base, opts);
+  checkNetworks(excl, opts);
   const v4base: LeanParsedCidr4[] = [], v6base: LeanParsedCidr6[] = [];
   const v4excl: LeanParsedCidr4[] = [], v6excl: LeanParsedCidr6[] = [];
   for (const str of typeof base === "string" ? [base] : base) {
@@ -488,7 +514,12 @@ export function excludeCidr(base: Networks, excl: Networks): Array<Network> {
 }
 
 /** Returns a generator for individual IPs contained in the networks. */
-export function* expandCidr(nets: Networks): Generator<Network> {
+export function expandCidr(nets: Networks, opts?: CidrOpts): Generator<Network> {
+  checkNetworks(nets, opts); // eagerly, so all seven entry points reject at call time alike
+  return expandChecked(nets);
+}
+
+function* expandChecked(nets: Networks): Generator<Network> {
   const v4: LeanParsedCidr4[] = [], v6: LeanParsedCidr6[] = [];
   for (const str of typeof nets === "string" ? [nets] : nets) {
     const net = parseCidrLean(str);
@@ -542,7 +573,9 @@ export function* expandCidr(nets: Networks): Generator<Network> {
 }
 
 /** Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`. */
-export function overlapCidr(a: Networks, b: Networks): boolean {
+export function overlapCidr(a: Networks, b: Networks, opts?: CidrOpts): boolean {
+  checkNetworks(a, opts);
+  checkNetworks(b, opts);
   // Fast path for single-vs-single (most common case)
   if (typeof a === "string" && typeof b === "string") {
     // Zero-allocation IPv4 fast path
@@ -613,7 +646,9 @@ export function overlapCidr(a: Networks, b: Networks): boolean {
 }
 
 /** Returns a boolean that indicates whether `networksA` fully contain all `networksB`. */
-export function containsCidr(a: Networks, b: Networks): boolean {
+export function containsCidr(a: Networks, b: Networks, opts?: CidrOpts): boolean {
+  checkNetworks(a, opts);
+  checkNetworks(b, opts);
   // Fast path for single-vs-single (most common case)
   if (typeof a === "string" && typeof b === "string") {
     // Zero-allocation IPv4 fast path

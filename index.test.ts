@@ -1,6 +1,7 @@
 import cidrTools, {
   mergeCidr, excludeCidr, expandCidr, overlapCidr, normalizeCidr, containsCidr, parseCidr,
 } from "./index.ts";
+import * as mod from "./index.ts";
 
 test("exports", () => {
   expect(cidrTools.mergeCidr).toEqual(mergeCidr);
@@ -390,6 +391,24 @@ test("parseCidr", () => {
   expect(() => parseCidr("/24")).toThrow();
   expect(() => parseCidr("1.2.3.4/")).toThrow();
   expect(() => parseCidr("::/")).toThrow();
+});
+
+test("invalid networks are rejected, not silently parsed", () => {
+  // zero-padded octets and out-of-family prefixes used to yield a plausible but wrong network
+  for (const net of ["010.0.0.1", "1.2.3.4/33", "::1/129"]) {
+    expect(() => normalizeCidr(net)).toThrow();
+  }
+  // sweep the namespace rather than a hand-written list, so a new export cannot skip validation
+  for (const fn of Object.values(mod)) {
+    if (typeof fn !== "function") continue;
+    expect(() => fn("bogus", "bogus")).toThrow(); // eager: generators must not defer to first next()
+    if (fn.length === 3) expect(() => fn("1.2.3.0/24", "bogus")).toThrow(); // second network argument
+  }
+
+  // validate: false opts out and reaches the lenient parsers, which stay live for it
+  expect(normalizeCidr("010.0.0.1", {validate: false})).toEqual("10.0.0.1");
+  expect(parseCidr("1.2.3.4/33", {validate: false}).prefix).toEqual("33");
+  expect(() => parseCidr("1.2.3.4/", {validate: false})).toThrow(); // parsePrefixNum still guards
 });
 
 // readonly arrays must be accepted (compile-time guard against the type reverting to a mutable Array)

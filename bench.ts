@@ -24,8 +24,13 @@ const v6cidrs = ["::1/128", "fe80::/10", "fc00::/7", "2001:db8::/32", "2001:db8:
 const many4 = Array.from({length: 2000}, (_, i) => `${(i >>> 8) & 0xff}.${i & 0xff}.0.0/24`);
 const many6 = Array.from({length: 2000}, (_, i) => `2001:db8:${i.toString(16)}::/48`);
 
+// paired `unchecked` rows keep the cost of the default boundary validation visible
+const unchecked = {validate: false};
+
 bench("parseCidr v4", 1e6, () => parseCidr("10.0.0.0/8"));
+bench("parseCidr v4 unchecked", 1e6, () => parseCidr("10.0.0.0/8", unchecked));
 bench("parseCidr v6", 5e5, () => parseCidr("fe80::/10"));
+bench("parseCidr v6 unchecked", 5e5, () => parseCidr("fe80::/10", unchecked));
 
 bench("normalizeCidr v4", 5e5, () => normalizeCidr("10.0.0.0/8"));
 bench("normalizeCidr v6", 2e5, () => normalizeCidr("fe80::/10"));
@@ -37,6 +42,7 @@ bench("mergeCidr v4", 2e5, () => mergeCidr(v4cidrs));
 bench("mergeCidr v6", 1e5, () => mergeCidr(v6cidrs));
 bench("mergeCidr v4 2000 nets", 300, () => mergeCidr(many4));
 bench("mergeCidr v6 2000 nets", 300, () => mergeCidr(many6));
+bench("mergeCidr v6 2000 unchecked", 300, () => mergeCidr(many6, unchecked));
 
 bench("excludeCidr v4", 2e5, () => excludeCidr(["10.0.0.0/8"], ["10.1.0.0/16"]));
 bench("excludeCidr v6", 2e4, () => excludeCidr(["fe80::/10"], ["fe80:1::/32"]));

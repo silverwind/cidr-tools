@@ -33,24 +33,27 @@ parseCidr("::/64");
 
 All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
 
-It is expected that the passed CIDRs and IPs are validated as the module's own input validation is rudimentary. You are encouraged to use modules like [is-cidr](https://github.com/silverwind/is-cidr) and [is-ip](https://github.com/sindresorhus/is-ip) to validate before passing to this module.
+Networks are validated with [cidr-regex](https://github.com/silverwind/cidr-regex) and anything that is not a CIDR or IP address throws, including out-of-family prefixes like `1.2.3.4/33` and ambiguous zero-padded octets like `010.0.0.1`.
+
+Every function takes a trailing `[opts]` *Object*:
+  - `validate`: Whether to reject networks that are not a CIDR or IP address. `false` skips the check for input already known to be valid, and then malformed input is parsed on a best-effort basis. Default: `true`.
 
 This module requires [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility) support in your environment.
 
-### mergeCidr(networks)
+### mergeCidr(networks, [opts])
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns an array of merged networks.
 
-### excludeCidr(baseNetworks, excludeNetworks)
+### excludeCidr(baseNetworks, excludeNetworks, [opts])
 
 - `baseNetworks` *String* or *Array*: One or more CIDR or IP addresses.
 - `excludeNetworks` *String* or *Array*: One or more CIDR or IP addresses to exclude from `baseNetworks`.
 
 Returns an array of merged remaining networks of the subtraction of `excludeNetworks` from `baseNetworks`.
 
-### expandCidr(networks)
+### expandCidr(networks, [opts])
 
 - `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
@@ -67,14 +70,14 @@ if (end - start >= 1000000n) {
 }
 ```
 
-### overlapCidr(networksA, networksB)
+### overlapCidr(networksA, networksB, [opts])
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
 
 Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`.
 
-### containsCidr(networksA, networksB)
+### containsCidr(networksA, networksB, [opts])
 
 - `networksA` *String* or *Array*: One or more CIDR or IP address.
 - `networksB` *String* or *Array*: One or more CIDR or IP address.
@@ -87,11 +90,11 @@ Returns a boolean that indicates whether `networksA` fully contain all `networks
 
 Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network.
 
-`opts`: *Object*
+`opts`: *Object*, additionally to `validate`:
   - `compress`: Whether to compress the IP. For IPv6, this means the "best representation" all-lowercase shortest possible form. Default: `true`.
   - `hexify`: Whether to convert IPv4-Mapped IPv6 addresses to hex. Default: `false`.
 
-### parseCidr(network)
+### parseCidr(network, [opts])
 
 - `network` *String*: A CIDR or IP address.
 
@@ -109,9 +112,7 @@ Returns a `parsed` Object which is used internally by this module. It can be use
 ## Related
 
 - [ip-bigint](https://github.com/silverwind/ip-bigint) - Convert IPv4 and IPv6 addresses to native BigInt and vice-versa
-- [ip-regex](https://github.com/sindresorhus/ip-regex) - Regular expression for matching IP addresses
 - [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
-- [is-ip](https://github.com/sindresorhus/is-ip) - Check if a string is an IP address
-- [cidr-regex](https://github.com/silverwind/cidr-regex) - Check if a string is an IP address in CIDR notation
+- [cidr-regex](https://github.com/silverwind/cidr-regex) - Regular expression for matching IP addresses in CIDR notation and bare IP addresses
 
 © [silverwind](https://github.com/silverwind), distributed under BSD licence.
