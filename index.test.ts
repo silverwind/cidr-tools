@@ -394,10 +394,12 @@ test("parseCidr", () => {
 });
 
 test("invalid networks are rejected, not silently parsed", () => {
-  // zero-padded octets and out-of-family prefixes used to yield a plausible but wrong network
-  for (const net of ["010.0.0.1", "1.2.3.4/33", "::1/129"]) {
+  // these used to yield a plausible but wrong network: zero-padded octets, out-of-range prefixes,
+  // and inet_aton shorthand, which resolvers expand but this module left-padded (127.1 -> 0.0.127.1)
+  for (const net of ["010.0.0.1", "1.2.3.4/33", "::1/129", "1.2.3.4/255", "::/200", "127.1", "169.254.43518"]) {
     expect(() => normalizeCidr(net)).toThrow();
   }
+  expect(() => containsCidr(["127.0.0.0/8"], "127.1")).toThrow();
   // sweep the namespace rather than a hand-written list, so a new export cannot skip validation
   for (const fn of Object.values(mod)) {
     if (typeof fn !== "function") continue;
