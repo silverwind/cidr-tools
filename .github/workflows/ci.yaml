@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        js: [[node, 22], [node, 24], [node, 26], [bun, latest]]
+        node: [22, 24, 26]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
@@ -18,13 +18,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           cache: pnpm
-          node-version: ${{matrix.js[1]}}
-        if: ${{matrix.js[0] == 'node'}}
+          node-version: ${{matrix.node}}
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{matrix.js[1]}}
-        if: ${{matrix.js[0] == 'bun'}}
-      - run: make lint test
-        if: ${{matrix.js[0] == 'node'}}
-      - run: bun install && bun test
-        if: ${{matrix.js[0] == 'bun'}}
+          bun-version: latest
+      - run: make deps lint test

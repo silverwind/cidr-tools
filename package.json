@@ -11,7 +11,10 @@
     "subnet",
     "network"
   ],
-  "repository": "silverwind/cidr-tools",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/silverwind/cidr-tools.git"
+  },
   "license": "BSD-2-Clause",
   "type": "module",
   "sideEffects": false,

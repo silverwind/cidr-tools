@@ -25,6 +25,7 @@ bench: node_modules
 .PHONY: test
 test: node_modules
 	pnpm exec vitest
+	bun test --only-failures --concurrent
 
 .PHONY: test-update
 test-update: node_modules
