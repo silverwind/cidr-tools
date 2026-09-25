@@ -24,30 +24,30 @@
   "files": [
     "dist"
   ],
-  "packageManager": "pnpm@12.3.4",
+  "packageManager": "pnpm@12.6.0",
   "engines": {
     "node": ">=22",
     "bun": "*"
   },
   "dependencies": {
-    "cidr-regex": "^7.1.0",
+    "cidr-regex": "^7.1.1",
     "ip-bigint": "^10.0.1"
   },
   "devDependencies": {
-    "@types/node": "26.1.2",
+    "@types/node": "26.6.2",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
-    "@vitest/coverage-v8": "4.1.10",
-    "eslint": "10.8.0",
-    "eslint-config-silverwind": "143.0.0",
+    "@vitest/coverage-v8": "5.0.2",
+    "eslint": "10.11.0",
+    "eslint-config-silverwind": "151.0.1",
     "jest-extended": "7.0.0",
-    "tsdown": "0.22.14",
-    "tsdown-config-silverwind": "4.0.3",
+    "tsdown": "0.23.0",
+    "tsdown-config-silverwind": "4.1.2",
     "typescript": "6.0.3",
-    "typescript-config-silverwind": "20.0.3",
-    "updates": "17.19.2",
-    "updates-config-silverwind": "4.0.4",
-    "versions": "15.1.4",
-    "vitest": "4.1.10",
-    "vitest-config-silverwind": "11.4.0"
+    "typescript-config-silverwind": "21.0.1",
+    "updates": "19.0.0",
+    "updates-config-silverwind": "4.0.7",
+    "versions": "15.5.1",
+    "vitest": "5.0.2",
+    "vitest-config-silverwind": "12.0.4"
   }
 }
