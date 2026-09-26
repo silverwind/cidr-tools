@@ -404,6 +404,9 @@ test("invalid networks are rejected eagerly by every export unless validate is f
 
   expect(normalizeCidr("010.0.0.1", {validate: false})).toEqual("10.0.0.1");
   expect(parseCidr("1.2.3.4/33", {validate: false}).prefix).toEqual("33");
+  expect(parseCidr("1.2.3.4/200", {validate: false})).toMatchObject({cidr: "1.2.3.4/200", prefix: "200"});
+  expect(parseCidr("::1/200", {validate: false}).cidr).toEqual("::1/200");
+  expect(normalizeCidr(["1.2.3.4/200", "::1/200"], {validate: false})).toEqual(["1.2.3.4/200", "::1/200"]);
   expect(() => parseCidr("1.2.3.4/", {validate: false})).toThrow();
 });
 

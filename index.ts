@@ -169,10 +169,14 @@ function parseIPv4Range(str: string): boolean {
   return true;
 }
 
+function formatPrefix(prefixNum: number): string {
+  return prefixStrings[prefixNum] ?? `/${prefixNum}`;
+}
+
 function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
   if (parseIPv4Range(cidr)) {
     const ip = formatIPv4Fast(rangeV4Start);
-    return rangeSlashIndex !== -1 ? ip + prefixStrings[rangeV4Prefix] : ip;
+    return rangeSlashIndex !== -1 ? ip + formatPrefix(rangeV4Prefix) : ip;
   }
 
   // IPv6, and the IPv4 forms the fast path above declines: delegate to ip-bigint.
@@ -187,7 +191,7 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
   if (version === 4) {
     const mask = hostMasks4[Math.max(32 - prefixNum, 0)];
     const ip = formatIPv4Fast((Number(number) & ~mask) >>> 0);
-    return prefixPresent ? ip + prefixStrings[prefixNum] : ip;
+    return prefixPresent ? ip + formatPrefix(prefixNum) : ip;
   }
 
   const compress = opts?.compress ?? true;
@@ -199,7 +203,7 @@ function doNormalize(cidr: Network, opts?: NormalizeOpts): Network {
   const start = hostBits > 0 ? number & hostNotMasks[hostBits] : number;
   // Masking can clear the `::ffff:` marker, leaving an address that is no longer v4-mapped.
   const startMapped = ipv4mapped && (start >> 32n) === 0xffffn;
-  return stringifyIp({number: start, version, ipv4mapped: startMapped, scopeid}, {compress, hexify}) + prefixStrings[prefixNum];
+  return stringifyIp({number: start, version, ipv4mapped: startMapped, scopeid}, {compress, hexify}) + formatPrefix(prefixNum);
 }
 
 /** Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network. */
@@ -222,7 +226,7 @@ export function parseCidr(str: Network, opts?: CidrOpts): ParsedCidr {
     const ip = formatIPv4Fast(v4num);
     const mask = hostMasks4[Math.max(32 - prefixNum, 0)];
     return {
-      cidr: ip + prefixStrings[prefixNum],
+      cidr: ip + formatPrefix(prefixNum),
       ip,
       version: 4,
       prefix: prefixNumStrings[prefixNum] ?? String(prefixNum),
@@ -249,7 +253,7 @@ export function parseCidr(str: Network, opts?: CidrOpts): ParsedCidr {
     end = number | hostMasks[hostBits];
   }
   return {
-    cidr: ip + prefixStrings[prefixNum],
+    cidr: ip + formatPrefix(prefixNum),
     ip,
     version,
     prefix: prefixNumStrings[prefixNum] ?? String(prefixNum),
