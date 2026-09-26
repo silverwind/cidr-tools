@@ -26,4 +26,4 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - run: make deps lint test
+      - run: make deps lint test build
