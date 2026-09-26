@@ -1,8 +1,13 @@
 # cidr-tools
 [![](https://img.shields.io/npm/v/cidr-tools.svg?style=flat)](https://www.npmjs.org/package/cidr-tools) [![](https://img.shields.io/npm/dm/cidr-tools.svg)](https://www.npmjs.org/package/cidr-tools) [![](https://img.shields.io/bundlephobia/minzip/cidr-tools.svg)](https://bundlephobia.com/package/cidr-tools) [![](https://packagephobia.com/badge?p=cidr-tools)](https://packagephobia.com/result?p=cidr-tools) [![](https://depx.co/api/badge/cidr-tools)](https://depx.co/pkg/cidr-tools)
+
 > Tools to work with IPv4 and IPv6 CIDR
 
 ## Usage
+
+```sh
+pnpm add cidr-tools
+```
 
 ```js
 import {mergeCidr, excludeCidr, expandCidr, overlapCidr, containsCidr, normalizeCidr, parseCidr} from "cidr-tools";
@@ -31,7 +36,7 @@ parseCidr("::/64");
 
 ## API
 
-All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Function that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
+All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Functions that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
 
 Networks are validated with [cidr-regex](https://github.com/silverwind/cidr-regex) and anything that is not a CIDR or IP address throws, including out-of-family prefixes like `1.2.3.4/33` and ambiguous zero-padded octets like `010.0.0.1`.
 
@@ -115,4 +120,4 @@ Returns a `parsed` Object which is used internally by this module. It can be use
 - [is-cidr](https://github.com/silverwind/is-cidr) - Check if a string is an IP address in CIDR notation
 - [cidr-regex](https://github.com/silverwind/cidr-regex) - Regular expression for matching IP addresses in CIDR notation and bare IP addresses
 
-© [silverwind](https://github.com/silverwind), distributed under BSD licence.
+© [silverwind](https://github.com/silverwind), distributed under BSD licence
