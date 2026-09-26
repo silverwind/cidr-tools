@@ -31,12 +31,12 @@ normalizeCidr("::ffff/64");
 //=> "::/64"
 
 parseCidr("::/64");
-//=> {cidr: "::/64", version: 6, prefix: "64", start: 0n, end: 18446744073709551615n}
+//=> {cidr: "::/64", ip: "::", version: 6, prefix: "64", prefixPresent: true, start: 0n, end: 18446744073709551615n}
 ```
 
 ## API
 
-All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. Functions that return networks will return a merged and sorted set of networks with IPv4 sorted before IPv6.
+All functions take CIDR addresses or single IP addresses. On single addresses, a prefix of `/32` or `/128` is assumed. `mergeCidr`, `excludeCidr` and `expandCidr` return a merged and sorted set with IPv4 sorted before IPv6.
 
 Networks are validated with [cidr-regex](https://github.com/silverwind/cidr-regex) and anything that is not a CIDR or IP address throws, including out-of-family prefixes like `1.2.3.4/33` and ambiguous zero-padded octets like `010.0.0.1`.
 
@@ -77,21 +77,21 @@ if (end - start >= 1000000n) {
 
 ### overlapCidr(networksA, networksB, [opts])
 
-- `networksA` *String* or *Array*: One or more CIDR or IP address.
-- `networksB` *String* or *Array*: One or more CIDR or IP address.
+- `networksA` *String* or *Array*: One or more CIDR or IP addresses.
+- `networksB` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns a boolean that indicates if `networksA` overlap (intersect) with `networksB`.
 
 ### containsCidr(networksA, networksB, [opts])
 
-- `networksA` *String* or *Array*: One or more CIDR or IP address.
-- `networksB` *String* or *Array*: One or more CIDR or IP address.
+- `networksA` *String* or *Array*: One or more CIDR or IP addresses.
+- `networksB` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns a boolean that indicates whether `networksA` fully contain all `networksB`.
 
 ### normalizeCidr(networks, [opts])
 
-- `networks` *String* or *Array*: One or more CIDR or IP address.
+- `networks` *String* or *Array*: One or more CIDR or IP addresses.
 
 Returns a string or array (depending on input) with a normalized representation. Will not include a prefix on single IPs. Will set network address to the start of the network.
 
