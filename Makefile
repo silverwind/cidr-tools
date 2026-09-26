@@ -31,15 +31,15 @@ test-update: node_modules
 test-coverage: node_modules
 	pnpm exec vitest --coverage
 
-.PHONY: build
-build: node_modules $(DIST_FILES)
-
-$(DIST_FILES): $(SOURCE_FILES) pnpm-lock.yaml package.json tsdown.config.ts tsconfig.json
-	pnpm exec tsdown
-
 .PHONY: bench
 bench: node_modules
 	@node bench.ts
+
+.PHONY: build
+build: node_modules $(DIST_FILES)
+
+$(DIST_FILES): $(SOURCE_FILES) pnpm-lock.yaml package.json tsconfig.json tsdown.config.ts
+	pnpm exec tsdown
 
 .PHONY: publish
 publish: node_modules
