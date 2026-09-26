@@ -49,7 +49,6 @@ test("mergeCidr", () => {
   expect(mergeCidr(["::/0"])).toEqual(["::/0"]);
   expect(mergeCidr(["0.0.0.0/0", "::/0"])).toEqual(["0.0.0.0/0", "::/0"]);
   expect(mergeCidr(["10.0.0.0/8", "10.0.0.0/16", "10.0.0.0/24"])).toEqual(["10.0.0.0/8"]);
-  // adjacent blocks tile into a larger aligned block
   expect(mergeCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.128/26", "10.0.0.192/26"])).toEqual(["10.0.0.0/24"]);
   expect(mergeCidr(["10.0.0.128/25", "10.0.0.0/25"])).toEqual(["10.0.0.0/24"]);
   expect(mergeCidr(["10.0.0.0/24", "10.0.0.64/26", "10.0.1.0/24"])).toEqual(["10.0.0.0/23"]);
@@ -260,7 +259,6 @@ test("containsCidr", () => {
   expect(containsCidr(["fd00::/64", "fd01::/64"], ["fd00::1", "fd02::1"])).toEqual(false);
   expect(containsCidr(["::/0"], ["1.2.3.4", "5.6.7.8"])).toEqual(false);
   expect(containsCidr(["0.0.0.0/0"], ["::1", "::2"])).toEqual(false);
-  // adjacent A-blocks must be coalesced before testing containment (union coverage)
   expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], "10.0.0.0/24")).toEqual(true);
   expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], ["10.0.0.0/24", "10.0.0.0/24"])).toEqual(true);
   expect(containsCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.128/26", "10.0.0.192/26"], "10.0.0.0/24")).toEqual(true);
@@ -268,10 +266,10 @@ test("containsCidr", () => {
   expect(containsCidr(["::/65", "::8000:0:0:0/65"], "::/64")).toEqual(true);
   expect(containsCidr(["::/66", "::8000:0:0:0/65"], "::/64")).toEqual(false);
   expect(containsCidr(["fe80::/66", "fe80::4000:0:0:0/66", "fe80::8000:0:0:0/66", "fe80::c000:0:0:0/66"], "fe80::/64")).toEqual(true);
-  expect(containsCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.192/26"], "10.0.0.0/24")).toEqual(false); // 3 of 4 quarters
-  expect(containsCidr(["10.0.0.0/25", "10.0.0.64/26"], "10.0.0.0/24")).toEqual(false); // overlapping, not tiling
-  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], ["10.0.0.0/26", "10.0.0.192/26"])).toEqual(true); // multiple targets in union
-  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25", "::/1", "8000::/1"], ["10.0.0.0/24", "::/0"])).toEqual(true); // mixed v4+v6 tiling
+  expect(containsCidr(["10.0.0.0/26", "10.0.0.64/26", "10.0.0.192/26"], "10.0.0.0/24")).toEqual(false);
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.64/26"], "10.0.0.0/24")).toEqual(false);
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25"], ["10.0.0.0/26", "10.0.0.192/26"])).toEqual(true);
+  expect(containsCidr(["10.0.0.0/25", "10.0.0.128/25", "::/1", "8000::/1"], ["10.0.0.0/24", "::/0"])).toEqual(true);
 });
 
 test("parseCidr", () => {
@@ -393,27 +391,22 @@ test("parseCidr", () => {
   expect(() => parseCidr("::/")).toThrow();
 });
 
-test("invalid networks are rejected, not silently parsed", () => {
-  // these used to yield a plausible but wrong network: zero-padded octets, out-of-range prefixes,
-  // and inet_aton shorthand, which resolvers expand but this module left-padded (127.1 -> 0.0.127.1)
+test("invalid networks are rejected eagerly by every export unless validate is false", () => {
   for (const net of ["010.0.0.1", "1.2.3.4/33", "::1/129", "1.2.3.4/255", "::/200", "127.1", "169.254.43518"]) {
     expect(() => normalizeCidr(net)).toThrow();
   }
   expect(() => containsCidr(["127.0.0.0/8"], "127.1")).toThrow();
-  // sweep the namespace rather than a hand-written list, so a new export cannot skip validation
   for (const fn of Object.values(mod)) {
     if (typeof fn !== "function") continue;
-    expect(() => fn("bogus", "bogus")).toThrow(); // eager: generators must not defer to first next()
-    if (fn.length === 3) expect(() => fn("1.2.3.0/24", "bogus")).toThrow(); // second network argument
+    expect(() => fn("bogus", "bogus")).toThrow();
+    if (fn.length === 3) expect(() => fn("1.2.3.0/24", "bogus")).toThrow();
   }
 
-  // validate: false opts out and reaches the lenient parsers, which stay live for it
   expect(normalizeCidr("010.0.0.1", {validate: false})).toEqual("10.0.0.1");
   expect(parseCidr("1.2.3.4/33", {validate: false}).prefix).toEqual("33");
-  expect(() => parseCidr("1.2.3.4/", {validate: false})).toThrow(); // parsePrefixNum still guards
+  expect(() => parseCidr("1.2.3.4/", {validate: false})).toThrow();
 });
 
-// readonly arrays must be accepted (compile-time guard against the type reverting to a mutable Array)
 test("readonly array inputs", () => {
   const ro: readonly string[] = ["1.0.0.0/24", "1.0.1.0/24"];
   expect(mergeCidr(ro)).toEqual(["1.0.0.0/23"]);
