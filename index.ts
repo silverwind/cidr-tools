@@ -720,7 +720,15 @@ export function containsCidr(a: Networks, b: Networks, opts?: CidrOpts): boolean
   return true;
 }
 
-export default {
+const cidrTools: {
+  mergeCidr: typeof mergeCidr,
+  excludeCidr: typeof excludeCidr,
+  expandCidr: typeof expandCidr,
+  overlapCidr: typeof overlapCidr,
+  containsCidr: typeof containsCidr,
+  normalizeCidr: typeof normalizeCidr,
+  parseCidr: typeof parseCidr,
+} = {
   mergeCidr,
   excludeCidr,
   expandCidr,
@@ -729,3 +737,5 @@ export default {
   normalizeCidr,
   parseCidr,
 };
+
+export default cidrTools;
